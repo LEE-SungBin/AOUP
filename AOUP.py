@@ -71,7 +71,7 @@ class AOUP:
         self.colored_noise = rng.normal(
             loc=0.0, scale=1.0, size=(self.N_ensemble, self.N_particle))
 
-    def get_result(self) -> None:  # * get average and std drag of given parameter
+    def get_result(self) -> None:  # * get average and std of drag
         now = time.perf_counter()
         for _ in range(self.initial):
             self.time_evolution()  # * update self.position and self.colored_noise
@@ -79,7 +79,7 @@ class AOUP:
         drag = []
         for _ in range(self.sampling):
             self.time_evolution()
-            drag.append(self.get_drag())
+            drag.append(self.get_drag())  # * append drag
 
         key = hashlib.sha1(str(self.parameter).encode()).hexdigest()[:6]
         data_dir, setting_dir = Path("data"), Path("setting")
