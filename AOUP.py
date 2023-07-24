@@ -31,6 +31,11 @@ class Parameter:
     initial: int
     sampling: int
 
+    def to_log(self) -> str:
+        return " ".join(
+            f"{log}" for log in asdict(self).values()
+        )
+
 
 class AOUP:
     def __init__(self, parameter: Parameter):
@@ -76,34 +81,35 @@ class AOUP:
             self.time_evolution()
             drag.append(self.get_drag())
 
-        key = hashlib.sha1(str(parameter).encode()).hexdigest()[:6]
-
+        key = hashlib.sha1(str(self.parameter).encode()).hexdigest()[:6]
         data_dir, setting_dir = Path("data"), Path("setting")
-
         data_dir.mkdir(parents=True, exist_ok=True)
         setting_dir.mkdir(parents=True, exist_ok=True)
-
         name = key
-
         output = {
             "key": key,
         }
-
         output.update(asdict(self.parameter))
 
         with open(setting_dir / f"{name}.json", "w") as file:
-            json.dump(output, file)
+            json.dump(output, file)  # * save setting
 
         result = {
             "average": np.mean(drag),
             "std": np.std(drag),
             "time": time.perf_counter()-now
         }
-
         output.update(result)
 
         with open(data_dir / f"{name}.pkl", "wb") as file:
-            pickle.dump(output, file)
+            pickle.dump(output, file)  # * save result
+
+        log = (
+            f"{datetime.now().replace(microsecond=0)} {self.parameter.to_log()} {np.mean(drag)} {np.std(drag)} {time.perf_counter()-now}\n"
+        )
+
+        with open("log.txt", "a") as file:
+            file.write(log)  # * save log
 
     def animation(self) -> None:  # * animate histogram
         self.fig, self.ax = plt.subplots(tight_layout=True)
