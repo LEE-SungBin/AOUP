@@ -216,19 +216,19 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument("-N", "--N_particle", type=int, default=10000)
-    parser.add_argument("-ens", "--N_ensemble", type=int, default=10)
+    parser.add_argument("-ens", "--N_ensemble", type=int, default=100)
     parser.add_argument("-v", "--velocity", type=float, default=1.0)
     parser.add_argument("-d", "--Lambda", type=float, default=1.0)
     parser.add_argument("-L", "--boundary", type=float, default=5.0)
     parser.add_argument("-bin", "--N_bins", type=int, default=40)
     parser.add_argument("-g", "--gamma", type=float, default=1.0)
-    parser.add_argument("-f", "--slope", type=float, default=2.0)
+    parser.add_argument("-f", "--slope", type=float, default=1.0)
     parser.add_argument("-T", "--temperature", type=float, default=1.0)
     parser.add_argument("-tau", "--tau", type=float, default=1.0)
     parser.add_argument("-Da", "--Da", type=float, default=1.0)
     parser.add_argument("-dt", "--delta_t", type=float, default=0.01)
-    parser.add_argument("-init", "--initial", type=int, default=1000)
-    parser.add_argument("-sam", "--sampling", type=int, default=1000)
+    parser.add_argument("-init", "--initial", type=int, default=10000)
+    parser.add_argument("-sam", "--sampling", type=int, default=10000)
 
     args = parser.parse_args()
 
@@ -249,7 +249,7 @@ if __name__ == '__main__':
         sampling=args.sampling,
     )
 
-    print(parameter)
+    # print(parameter)
 
     aoup = AOUP(parameter)
     # aoup.animation()
