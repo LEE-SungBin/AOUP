@@ -111,6 +111,39 @@ class AOUP:
         with open("log.txt", "a") as file:
             file.write(log)  # * save log
 
+    def time_evolution(self) -> None:  # * time evolution of AOUPs
+        rng = np.random.default_rng()
+
+        force = self.get_force()
+
+        self.position += (force / self.gamma - self.velocity) * self.delta_t
+        self.position += self.colored_noise * self.delta_t
+        self.position += rng.normal(
+            loc=0.0,
+            scale=np.sqrt(2 * self.temperature / self.gamma * self.delta_t),
+            size=(self.N_ensemble, self.N_particle)
+        )
+
+        self.position = self.periodic_boundary(self.position)
+
+        self.colored_noise += - self.colored_noise / self.tau * self.delta_t
+        self.colored_noise += rng.normal(
+            loc=0.0,  # * mean
+            scale=np.sqrt(2 * self.Da / self.tau * self.delta_t),  # * std
+            size=(self.N_ensemble, self.N_particle)
+        )
+
+    def get_force(self) -> npt.NDArray:  # * get external force from object
+        force = np.zeros(shape=(self.N_ensemble, self.N_particle))
+
+        force = np.where(np.array(
+            [- self.Lambda / 2 < self.position, self.position < 0.0]).all(0), -self.slope, force)
+
+        force = np.where(np.array(
+            [0.0 < self.position, self.position < self.Lambda / 2]).all(0), self.slope, force)
+
+        return force
+
     def animation(self) -> None:  # * animate histogram
         self.fig, self.ax = plt.subplots(tight_layout=True)
         self.bins = np.linspace(-self.boundary/2,
@@ -174,40 +207,8 @@ class AOUP:
 
         return positive_drag - negative_drag
 
-    def time_evolution(self) -> None:  # * time evolution of AOUPs
-        rng = np.random.default_rng()
-
-        self.colored_noise += - self.colored_noise / self.tau * self.delta_t
-        self.colored_noise += rng.normal(
-            loc=0.0,  # * mean
-            scale=np.sqrt(2 * self.Da / self.tau * self.delta_t),  # * std
-            size=(self.N_ensemble, self.N_particle)
-        )
-
-        force = self.get_force()
-
-        self.position += (force / self.gamma - self.velocity) * self.delta_t
-        self.position += self.colored_noise * self.delta_t
-        self.position += rng.normal(
-            loc=0.0,
-            scale=np.sqrt(2 * self.temperature / self.gamma * self.delta_t),
-            size=(self.N_ensemble, self.N_particle)
-        )
-
-        self.position = self.periodic_boundary(self.position)
-
-    def get_force(self) -> npt.NDArray:  # * get external force from object
-        force = np.zeros(shape=(self.N_ensemble, self.N_particle))
-
-        force = np.where(np.array(
-            [- self.Lambda / 2 < self.position, self.position < 0.0]).all(0), -self.slope, force)
-
-        force = np.where(np.array(
-            [0.0 < self.position, self.position < self.Lambda / 2]).all(0), self.slope, force)
-
-        return force
-
     # * periodic boundary condition
+
     def periodic_boundary(self, position: npt.NDArray) -> npt.NDArray:
         position = np.where(position > self.boundary / 2,
                             position - self.boundary * (((position - self.boundary/2) / self.boundary).astype(int) + 1), position)
