@@ -73,8 +73,8 @@ def get_conditions(
 
 
 def get_setting(
+    conditions: list[str],
     location: Path = Path("."),
-    conditions: list[str] | None = None,
 ) -> Any:
 
     def filter_file(f: Path) -> bool:
@@ -92,7 +92,7 @@ def get_setting(
 
     df = pd.DataFrame(settings)
 
-    if conditions == None or len(conditions) == 0:
+    if len(conditions) == 0:
         return df["key"]
 
     else:
@@ -100,13 +100,13 @@ def get_setting(
 
 
 def load_result(
+    conditions: list[str],
     location: Path = Path("."),
-    conditions: list[str] | None = None,
 ) -> pd.DataFrame:
 
     # * Scan the result directory and gather result files
     result_dir = location / f"data"
-    result_keys = get_setting(location, conditions)
+    result_keys = get_setting(location=location, conditions=conditions)
     result_files = [result_dir /
                     f"{result_key}.pkl" for result_key in result_keys]
 
