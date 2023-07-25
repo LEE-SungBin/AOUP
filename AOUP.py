@@ -76,7 +76,7 @@ class AOUP:
         for _ in range(self.initial):
             self.time_evolution()  # * update self.position and self.colored_noise
 
-        drag = []
+        drag = []  # * [self.sampling, self.N_ensemble]
         for _ in range(self.sampling):
             self.time_evolution()
             drag.append(self.get_drag())  # * append drag
@@ -96,8 +96,8 @@ class AOUP:
             json.dump(output, file)  # * save setting
 
         result = {
-            "average": np.mean(drag, axis=1),
-            "std": np.std(drag, axis=1),
+            "average": np.mean(drag, axis=0),
+            "std": np.std(drag, axis=0),
             "time": time.perf_counter()-now
         }
         output.update(result)

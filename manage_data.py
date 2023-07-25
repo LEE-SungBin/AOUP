@@ -118,7 +118,8 @@ def load_result(
 
     # * Concatenate to single dataframe
     df = pd.DataFrame(results)
-    return df
+
+    return df.sort_values(by=["Lambda", "slope"], ascending=True)
 
 
 def delete_result(
