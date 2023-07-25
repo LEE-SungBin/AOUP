@@ -80,6 +80,7 @@ class AOUP:
         for _ in range(self.sampling):
             self.time_evolution()
             drag.append(self.get_drag())  # * append drag
+        drag = np.array(drag)
 
         key = hashlib.sha1(str(self.parameter).encode()).hexdigest()[:6]
         data_dir, setting_dir = Path("data"), Path("setting")
@@ -95,8 +96,8 @@ class AOUP:
             json.dump(output, file)  # * save setting
 
         result = {
-            "average": np.mean(drag),
-            "std": np.std(drag),
+            "average": np.mean(drag, axis=1),
+            "std": np.std(drag, axis=1),
             "time": time.perf_counter()-now
         }
         output.update(result)
@@ -133,6 +134,23 @@ class AOUP:
             size=(self.N_ensemble, self.N_particle)
         )
 
+    def get_drag(self) -> npt.NDArray:  # * calculate drag force
+        positive_drag = self.slope * sum(
+            1 for i in self.position.reshape(-1) if 0 <
+            i < self.Lambda / 2) / self.N_ensemble
+
+        negative_drag = self.slope * sum(
+            1 for i in self.position.reshape(-1) if -
+            self.Lambda / 2 < i < 0) / self.N_ensemble
+
+        positive = (0 < self.position) & (self.position < self.Lambda / 2)
+        positive_drag = positive.astype(np.int64).sum(axis=1) * self.slope
+
+        negative = (- self.Lambda / 2 < self.position) & (self.position < 0)
+        negative_drag = negative.astype(np.int64).sum(axis=1) * self.slope
+
+        return positive_drag - negative_drag
+
     def get_force(self) -> npt.NDArray:  # * get external force from object
         force = np.zeros(shape=(self.N_ensemble, self.N_particle))
 
@@ -157,30 +175,31 @@ class AOUP:
         ani.save(f"test.mp4", fps=30, extra_args=['-vcodec', 'libx264'])
 
     def update(self, i: int) -> None:  # * update animation
+        print(i, end=" ")
         self.time_evolution()
 
         self.ax.cla()
-        self.ax.hist(self.position.reshape(-1), bins=self.bins)
+        self.ax.hist(self.position[0], bins=self.bins)
         self.ax.axvline(-self.Lambda/2, linestyle="--", color="k")
         self.ax.axvline(0.0, linestyle="--", color="k")
         self.ax.axvline(self.Lambda/2, linestyle="--", color="k")
-        self.ax.axhline(self.N_particle*self.N_ensemble /
-                        self.N_bins, linestyle="--", color="k")
+        self.ax.axhline(self.N_particle / self.N_bins,
+                        linestyle="--", color="k")
 
         lx = np.linspace(-self.Lambda/2, 0, 10)
         rx = np.linspace(0, self.Lambda/2, 10)
 
         def f(x: npt.NDArray):
-            return self.N_particle*self.N_ensemble/self.N_bins * (1 + x / (self.Lambda / 2))
+            return self.N_particle/self.N_bins * (1 + x / (self.Lambda / 2))
 
         def g(x: npt.NDArray):
-            return self.N_particle*self.N_ensemble/self.N_bins * (1 - x / (self.Lambda / 2))
+            return self.N_particle/self.N_bins * (1 - x / (self.Lambda / 2))
 
         self.ax.plot(lx, f(lx), color="b")
         self.ax.plot(rx, g(rx), color="r")
 
         self.ax.set_xlim(-self.boundary/2, self.boundary/2)
-        self.ax.set_ylim(0, self.N_particle*self.N_ensemble/self.N_bins * 1.5)
+        self.ax.set_ylim(0, self.N_particle/self.N_bins * 1.5)
 
         self.ax.text(
             0.99, 0.99, f"iter = {i+1}",
@@ -190,22 +209,11 @@ class AOUP:
         )
 
         self.ax.text(
-            0.99, 0.91, f"drag = {self.get_drag()}",
+            0.99, 0.91, f"drag = {self.get_drag()[0]}",
             verticalalignment="top", horizontalalignment='right',
             transform=self.ax.transAxes,
             color='black', fontsize=20
         )
-
-    def get_drag(self) -> float:  # * calculate drag force
-        positive_drag = self.slope * sum(
-            1 for i in self.position.reshape(-1) if 0 <
-            i < self.Lambda / 2) / self.N_ensemble
-
-        negative_drag = self.slope * sum(
-            1 for i in self.position.reshape(-1) if -
-            self.Lambda / 2 < i < 0) / self.N_ensemble
-
-        return positive_drag - negative_drag
 
     # * periodic boundary condition
 
@@ -231,8 +239,8 @@ if __name__ == '__main__':
     parser.add_argument("-g", "--gamma", type=float, default=1.0)
     parser.add_argument("-f", "--slope", type=float, default=1.0)
     parser.add_argument("-T", "--temperature", type=float, default=1.0)
-    parser.add_argument("-tau", "--tau", type=float, default=1.0)
-    parser.add_argument("-Da", "--Da", type=float, default=1.0)
+    parser.add_argument("-tau", "--tau", type=float, default=5.0)
+    parser.add_argument("-Da", "--Da", type=float, default=5.0)
     parser.add_argument("-dt", "--delta_t", type=float, default=0.01)
     parser.add_argument("-init", "--initial", type=int, default=10000)
     parser.add_argument("-sam", "--sampling", type=int, default=10000)
