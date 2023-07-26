@@ -130,7 +130,7 @@ class AOUP:
             pickle.dump(output, file)  # * save result
 
         log = (
-            f"{datetime.now().replace(microsecond=0)} {self.parameter.to_log()} {np.mean(drag)} {self.Time.to_log()}\n"
+            f"{datetime.now().replace(microsecond=0)} {self.parameter.to_log()} {np.mean(drag)} {self.Time.to_log()} {time.perf_counter()-now}\n"
         )
 
         with open("log.txt", "a") as file:
