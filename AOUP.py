@@ -63,12 +63,12 @@ class AOUP:
         self.sampling = self.parameter.sampling  # * number of iter to collect samples
 
     def set_zero(self) -> None:  # * initialize position and noise
-        rng = np.random.default_rng()
+        self.rng = np.random.default_rng()
 
-        self.position = rng.uniform(
+        self.position = self.rng.uniform(
             low=-self.boundary/2, high=self.boundary/2, size=(self.N_ensemble, self.N_particle))
 
-        self.colored_noise = rng.normal(
+        self.colored_noise = self.rng.normal(
             loc=0.0, scale=1.0, size=(self.N_ensemble, self.N_particle))
 
     def get_result(self) -> None:  # * get average and std of drag
@@ -113,24 +113,23 @@ class AOUP:
             file.write(log)  # * save log
 
     def time_evolution(self) -> None:  # * time evolution of AOUPs
-        rng = np.random.default_rng()
-
         force = self.get_force()
 
         self.position += (force / self.gamma - self.velocity) * self.delta_t
         self.position += self.colored_noise * self.delta_t
-        self.position += rng.normal(
-            loc=0.0,
-            scale=np.sqrt(2 * self.temperature / self.gamma * self.delta_t),
+        self.position += self.rng.normal(
+            loc=0.0,  # * mean
+            scale=np.sqrt(2 * self.temperature / \
+                          self.gamma * self.delta_t),  # * std
             size=(self.N_ensemble, self.N_particle)
         )
 
         self.position = self.periodic_boundary(self.position)
 
         self.colored_noise += - self.colored_noise / self.tau * self.delta_t
-        self.colored_noise += rng.normal(
+        self.colored_noise += self.rng.normal(
             loc=0.0,  # * mean
-            scale=np.sqrt(2 * self.Da / self.tau * self.delta_t),  # * std
+            scale=np.sqrt(2 * self.Da / self.tau**2 * self.delta_t),  # * std
             size=(self.N_ensemble, self.N_particle)
         )
 
