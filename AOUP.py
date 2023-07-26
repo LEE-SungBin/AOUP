@@ -37,12 +37,35 @@ class Parameter:
         )
 
 
+@dataclass
+class Time:
+    force_update: float
+    position_update: float
+    periodic_update: float
+    colored_noise_update: float
+    drag_update: float
+    total: float
+
+    def to_log(self) -> str:
+        return " ".join(
+            f"{log}" for log in asdict(self).values()
+        )
+
+
 class AOUP:
     def __init__(self, parameter: Parameter):
         self.parameter = parameter
 
         self.set_coeff()
         self.set_zero()
+        self.Time = Time(
+            force_update=0.0,
+            position_update=0.0,
+            periodic_update=0.0,
+            colored_noise_update=0.0,
+            drag_update=0.0,
+            total=0.0,
+        )
 
     def set_coeff(self) -> None:
         self.N_particle = self.parameter.N_particle  # * number of AOUPs
@@ -81,6 +104,7 @@ class AOUP:
             self.time_evolution()
             drag.append(self.get_drag())  # * append drag
         drag = np.array(drag)
+        self.Time.total = time.perf_counter() - now
 
         key = hashlib.sha1(str(self.parameter).encode()).hexdigest()[:6]
         data_dir, setting_dir = Path("data"), Path("setting")
@@ -106,15 +130,18 @@ class AOUP:
             pickle.dump(output, file)  # * save result
 
         log = (
-            f"{datetime.now().replace(microsecond=0)} {self.parameter.to_log()} {np.mean(drag)} {np.std(drag)} {time.perf_counter()-now}\n"
+            f"{datetime.now().replace(microsecond=0)} {self.parameter.to_log()} {np.mean(drag)} {self.Time.to_log()}\n"
         )
 
         with open("log.txt", "a") as file:
             file.write(log)  # * save log
 
     def time_evolution(self) -> None:  # * time evolution of AOUPs
+        now = time.perf_counter()
         force = self.get_force()
+        self.Time.force_update += time.perf_counter() - now
 
+        now = time.perf_counter()
         self.position += (force / self.gamma - self.velocity) * self.delta_t
         self.position += self.colored_noise * self.delta_t
         self.position += self.rng.normal(
@@ -123,30 +150,32 @@ class AOUP:
                           self.gamma * self.delta_t),  # * std
             size=(self.N_ensemble, self.N_particle)
         )
+        self.Time.position_update += time.perf_counter() - now
 
+        now = time.perf_counter()
         self.position = self.periodic_boundary(self.position)
+        self.Time.periodic_update += time.perf_counter() - now
 
+        now = time.perf_counter()
         self.colored_noise += - self.colored_noise / self.tau * self.delta_t
         self.colored_noise += self.rng.normal(
             loc=0.0,  # * mean
             scale=np.sqrt(2 * self.Da / self.tau**2 * self.delta_t),  # * std
             size=(self.N_ensemble, self.N_particle)
         )
+        self.Time.colored_noise_update += time.perf_counter() - now
 
     def get_drag(self) -> npt.NDArray:  # * calculate drag force
-        positive_drag = self.slope * sum(
-            1 for i in self.position.reshape(-1) if 0 <
-            i < self.Lambda / 2) / self.N_ensemble
 
-        negative_drag = self.slope * sum(
-            1 for i in self.position.reshape(-1) if -
-            self.Lambda / 2 < i < 0) / self.N_ensemble
+        now = time.perf_counter()
 
         positive = (0 < self.position) & (self.position < self.Lambda / 2)
         positive_drag = positive.astype(np.int64).sum(axis=1) * self.slope
 
         negative = (- self.Lambda / 2 < self.position) & (self.position < 0)
         negative_drag = negative.astype(np.int64).sum(axis=1) * self.slope
+
+        self.Time.drag_update += time.perf_counter() - now
 
         return positive_drag - negative_drag
 
