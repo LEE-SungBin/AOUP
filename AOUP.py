@@ -12,6 +12,7 @@ import json
 import pickle
 import argparse
 import time
+from numba import njit
 
 
 @dataclass
@@ -32,14 +33,15 @@ class Parameter:
     sampling: int
 
     def to_log(self) -> str:
-        return " ".join(
-            f"{log}" for log in asdict(self).values()
+        return ", ".join(
+            f"{key}={np.round(log, 2)}" for key, log in zip(asdict(self).keys(), asdict(self).values())
         )
 
 
 @dataclass
 class Time:
     force_update: float
+    positive_update: float
     position_update: float
     periodic_update: float
     colored_noise_update: float
@@ -47,9 +49,14 @@ class Time:
     total: float
 
     def to_log(self) -> str:
-        return " ".join(
-            f"{log}" for log in asdict(self).values()
+        return ", ".join(
+            f"{key}={int(np.round(log, 0))}s" for key, log in zip(asdict(self).keys(), asdict(self).values())
         )
+
+    # def to_log(self) -> str:
+    #     return ", ".join(
+    #         f"{key}={log}s" for key, log in zip(asdict(self).keys(), asdict(self).values())
+    #     )
 
 
 class AOUP:
@@ -60,6 +67,7 @@ class AOUP:
         self.set_zero()
         self.Time = Time(
             force_update=0.0,
+            positive_update=0.0,
             position_update=0.0,
             periodic_update=0.0,
             colored_noise_update=0.0,
@@ -91,11 +99,18 @@ class AOUP:
         self.position = self.rng.uniform(
             low=-self.boundary/2, high=self.boundary/2, size=(self.N_ensemble, self.N_particle))
 
+        self.positive = (0.0 < self.position) & (
+            self.position < self.Lambda / 2)
+
+        self.negative = (- self.Lambda / 2 <
+                         self.position) & (self.position < 0.0)
+
         self.colored_noise = self.rng.normal(
             loc=0.0, scale=1.0, size=(self.N_ensemble, self.N_particle))
 
     def get_result(self) -> None:  # * get average and std of drag
         now = time.perf_counter()
+
         for _ in range(self.initial):
             self.time_evolution()  # * update self.position and self.colored_noise
 
@@ -104,6 +119,7 @@ class AOUP:
             self.time_evolution()
             drag.append(self.get_drag())  # * append drag
         drag = np.array(drag)
+
         self.Time.total = time.perf_counter() - now
 
         key = hashlib.sha1(str(self.parameter).encode()).hexdigest()[:6]
@@ -122,7 +138,7 @@ class AOUP:
         result = {
             "average": np.mean(drag, axis=0),
             "std": np.std(drag, axis=0),
-            "time": time.perf_counter()-now
+            "time": time.perf_counter()-now,
         }
         output.update(result)
 
@@ -130,7 +146,7 @@ class AOUP:
             pickle.dump(output, file)  # * save result
 
         log = (
-            f"{datetime.now().replace(microsecond=0)} {self.parameter.to_log()} {np.mean(drag)} {self.Time.to_log()} {time.perf_counter()-now}\n"
+            f"{datetime.now().replace(microsecond=0)} | {self.parameter.to_log()} | average={np.round(np.mean(drag),5)} | {self.Time.to_log()}\n"
         )
 
         with open("log.txt", "a") as file:
@@ -139,6 +155,8 @@ class AOUP:
     def time_evolution(self) -> None:  # * time evolution of AOUPs
         now = time.perf_counter()
         force = self.get_force()
+        # force = get_force(self.N_ensemble, self.N_particle,
+        #                   self.positive, self.negative, self.slope)
         self.Time.force_update += time.perf_counter() - now
 
         now = time.perf_counter()
@@ -153,8 +171,15 @@ class AOUP:
         self.Time.position_update += time.perf_counter() - now
 
         now = time.perf_counter()
-        self.position = self.periodic_boundary(self.position)
+        self.periodic_boundary()
         self.Time.periodic_update += time.perf_counter() - now
+
+        now = time.perf_counter()
+        self.positive = (
+            0.0 < self.position) & (self.position < self.Lambda / 2)
+        self.negative = (
+            - self.Lambda / 2 < self.position) & (self.position < 0.0)
+        self.Time.positive_update += time.perf_counter() - now
 
         now = time.perf_counter()
         self.colored_noise += - self.colored_noise / self.tau * self.delta_t
@@ -165,30 +190,34 @@ class AOUP:
         )
         self.Time.colored_noise_update += time.perf_counter() - now
 
+    def get_force(self) -> npt.NDArray:
+
+        force = np.zeros(shape=(self.N_ensemble, self.N_particle))
+
+        force[self.positive] = self.slope
+        force[self.negative] = - self.slope
+
+        return force
+
     def get_drag(self) -> npt.NDArray:  # * calculate drag force
 
         now = time.perf_counter()
 
-        positive = (0 < self.position) & (self.position < self.Lambda / 2)
-        positive_drag = positive.astype(np.int64).sum(axis=1) * self.slope
-
-        negative = (- self.Lambda / 2 < self.position) & (self.position < 0)
-        negative_drag = negative.astype(np.int64).sum(axis=1) * self.slope
+        positive_drag = self.positive.astype(np.int64).sum(axis=1) * self.slope
+        negative_drag = self.negative.astype(np.int64).sum(axis=1) * self.slope
 
         self.Time.drag_update += time.perf_counter() - now
 
         return positive_drag - negative_drag
 
-    def get_force(self) -> npt.NDArray:  # * get external force from object
-        force = np.zeros(shape=(self.N_ensemble, self.N_particle))
+    # * periodic boundary condition
+    def periodic_boundary(self) -> None:
 
-        force = np.where(np.array(
-            [- self.Lambda / 2 < self.position, self.position < 0.0]).all(0), -self.slope, force)
+        left = self.position < -self.boundary / 2
+        right = self.position > self.boundary / 2
 
-        force = np.where(np.array(
-            [0.0 < self.position, self.position < self.Lambda / 2]).all(0), self.slope, force)
-
-        return force
+        self.position[left] += self.boundary
+        self.position[right] -= self.boundary
 
     def animation(self) -> None:  # * animate histogram
         self.fig, self.ax = plt.subplots(tight_layout=True)
@@ -243,16 +272,17 @@ class AOUP:
             color='black', fontsize=20
         )
 
-    # * periodic boundary condition
 
-    def periodic_boundary(self, position: npt.NDArray) -> npt.NDArray:
-        position = np.where(position > self.boundary / 2,
-                            position - self.boundary * (((position - self.boundary/2) / self.boundary).astype(int) + 1), position)
+# * get external force from object
+@njit
+def get_force(N_ensemble, N_particle, positive, negative, slope) -> npt.NDArray:
 
-        position = np.where(position < - self.boundary / 2,
-                            position + self.boundary * ((-(position + self.boundary/2) / self.boundary).astype(int) + 1), position)
+    force = np.zeros(shape=(N_ensemble, N_particle)).reshape(-1)
 
-        return position
+    force[positive.reshape(-1)] = slope
+    force[negative.reshape(-1)] = - slope
+
+    return force.reshape(N_ensemble, N_particle)
 
 
 if __name__ == '__main__':
@@ -262,6 +292,10 @@ if __name__ == '__main__':
     parser.add_argument("-ens", "--N_ensemble", type=int, default=100)
     parser.add_argument("-v", "--velocity", type=float, default=1.0)
     parser.add_argument("-d", "--Lambda", type=float, default=1.0)
+    parser.add_argument("-only", "--only", type=bool,
+                        default=False, choices=[True, False])
+    parser.add_argument("-max_d", "--max_Lambda", type=float, default=0.25)
+    parser.add_argument("-N_lambda", "--N_Lambda", type=int, default=25)
     parser.add_argument("-L", "--boundary", type=float, default=5.0)
     parser.add_argument("-bin", "--N_bins", type=int, default=40)
     parser.add_argument("-g", "--gamma", type=float, default=1.0)
@@ -275,25 +309,54 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    parameter = Parameter(
-        N_particle=args.N_particle,
-        N_ensemble=args.N_ensemble,
-        velocity=args.velocity,
-        Lambda=args.Lambda,
-        boundary=args.boundary,
-        N_bins=args.N_bins,
-        gamma=args.gamma,
-        slope=args.slope,
-        temperature=args.temperature,
-        tau=args.tau,
-        Da=args.Da,
-        delta_t=args.delta_t,
-        initial=args.initial,
-        sampling=args.sampling,
-    )
+    if args.only:
+        parameter = Parameter(
+            N_particle=args.N_particle,
+            N_ensemble=args.N_ensemble,
+            velocity=args.velocity,
+            Lambda=args.Lambda,
+            boundary=args.boundary,
+            N_bins=args.N_bins,
+            gamma=args.gamma,
+            slope=args.slope,
+            temperature=args.temperature,
+            tau=args.tau,
+            Da=args.Da,
+            delta_t=args.delta_t,
+            initial=args.initial,
+            sampling=args.sampling,
+        )
 
-    # print(parameter)
+        # print(parameter)
 
-    aoup = AOUP(parameter)
-    # aoup.animation()
-    aoup.get_result()
+        aoup = AOUP(parameter)
+        aoup.get_result()
+
+    else:
+        Lambdas = np.linspace(
+            args.max_Lambda/args.N_Lambda,
+            args.max_Lambda, args.N_Lambda, dtype=float
+        )
+
+        for Lambda in Lambdas:
+            parameter = Parameter(
+                N_particle=args.N_particle,
+                N_ensemble=args.N_ensemble,
+                velocity=args.velocity,
+                Lambda=Lambda,
+                boundary=args.boundary,
+                N_bins=args.N_bins,
+                gamma=args.gamma,
+                slope=args.slope,
+                temperature=args.temperature,
+                tau=args.tau,
+                Da=args.Da,
+                delta_t=args.delta_t,
+                initial=args.initial,
+                sampling=args.sampling,
+            )
+
+            # print(parameter)
+
+            aoup = AOUP(parameter)
+            aoup.get_result()
