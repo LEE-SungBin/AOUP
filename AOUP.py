@@ -13,6 +13,7 @@ import pickle
 import argparse
 import time
 from numba import njit
+import itertools
 
 
 @dataclass
@@ -34,7 +35,7 @@ class Parameter:
 
     def to_log(self) -> str:
         return ", ".join(
-            f"{key}={np.round(log, 2)}" for key, log in zip(asdict(self).keys(), asdict(self).values())
+            f"{key}={np.round(log, 3)}" for key, log in zip(asdict(self).keys(), asdict(self).values())
         )
 
 
@@ -114,11 +115,12 @@ class AOUP:
         for _ in range(self.initial):
             self.time_evolution()  # * update self.position and self.colored_noise
 
-        drag = []  # * [self.sampling, self.N_ensemble]
+        drag = np.zeros(self.N_ensemble)  # * [self.N_ensemble]
         for _ in range(self.sampling):
             self.time_evolution()
-            drag.append(self.get_drag())  # * append drag
-        drag = np.array(drag)
+            # * time average of drag (Ergodic hypothesis: time average = ensemble average)
+            drag += self.get_drag()
+            # drag += self.get_drag() / self.sampling
 
         self.Time.total = time.perf_counter() - now
 
@@ -136,8 +138,7 @@ class AOUP:
             json.dump(output, file)  # * save setting
 
         result = {
-            "average": np.mean(drag, axis=0),
-            "std": np.std(drag, axis=0),
+            "drag": drag,
             "time": time.perf_counter()-now,
         }
         output.update(result)
@@ -146,7 +147,7 @@ class AOUP:
             pickle.dump(output, file)  # * save result
 
         log = (
-            f"{datetime.now().replace(microsecond=0)} | {self.parameter.to_log()} | average={np.round(np.mean(drag),5)} | {self.Time.to_log()}\n"
+            f"{datetime.now().replace(microsecond=0)} | {self.parameter.to_log()} | drag={np.round(np.mean(drag),5)} | {self.Time.to_log()}\n"
         )
 
         with open("log.txt", "a") as file:
@@ -203,8 +204,8 @@ class AOUP:
 
         now = time.perf_counter()
 
-        positive_drag = self.positive.astype(np.int64).sum(axis=1) * self.slope
-        negative_drag = self.negative.astype(np.int64).sum(axis=1) * self.slope
+        positive_drag = self.positive.astype(np.int64).sum(axis=1)
+        negative_drag = self.negative.astype(np.int64).sum(axis=1)
 
         self.Time.drag_update += time.perf_counter() - now
 
@@ -213,11 +214,8 @@ class AOUP:
     # * periodic boundary condition
     def periodic_boundary(self) -> None:
 
-        left = self.position < -self.boundary / 2
-        right = self.position > self.boundary / 2
-
-        self.position[left] += self.boundary
-        self.position[right] -= self.boundary
+        self.position[self.position < -self.boundary / 2] += self.boundary
+        self.position[self.position > self.boundary / 2] -= self.boundary
 
     def animation(self) -> None:  # * animate histogram
         self.fig, self.ax = plt.subplots(tight_layout=True)
@@ -227,7 +225,7 @@ class AOUP:
         self.ax.hist(self.position.reshape(-1), bins=self.bins)
 
         ani = animation.FuncAnimation(
-            fig=self.fig, func=self.update, frames=300, interval=0, blit=False)
+            fig=self.fig, func=self.update, frames=1000, interval=0, blit=False)
 
         ani.save(f"test.mp4", fps=30, extra_args=['-vcodec', 'libx264'])
 
@@ -256,7 +254,7 @@ class AOUP:
         self.ax.plot(rx, g(rx), color="r")
 
         self.ax.set_xlim(-self.boundary/2, self.boundary/2)
-        self.ax.set_ylim(0, self.N_particle/self.N_bins * 1.5)
+        # self.ax.set_ylim(0, self.N_particle/self.N_bins * 1.5)
 
         self.ax.text(
             0.99, 0.99, f"iter = {i+1}",
@@ -288,24 +286,27 @@ def get_force(N_ensemble, N_particle, positive, negative, slope) -> npt.NDArray:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-N", "--N_particle", type=int, default=10000)
-    parser.add_argument("-ens", "--N_ensemble", type=int, default=100)
-    parser.add_argument("-v", "--velocity", type=float, default=1.0)
-    parser.add_argument("-d", "--Lambda", type=float, default=1.0)
+    parser.add_argument("-N", "--N_particle", type=int, default=1)
+    parser.add_argument("-ens", "--N_ensemble", type=int, default=10000)
+    parser.add_argument("-v", "--velocity", type=float, default=0.5)
     parser.add_argument("-only", "--only", type=bool,
                         default=False, choices=[True, False])
-    parser.add_argument("-max_d", "--max_Lambda", type=float, default=0.25)
-    parser.add_argument("-N_lambda", "--N_Lambda", type=int, default=25)
-    parser.add_argument("-L", "--boundary", type=float, default=5.0)
+    parser.add_argument("-d", "--Lambda", type=float, default=1.0)
+    parser.add_argument("-f", "--slope", type=float, default=1.0)
+    parser.add_argument("-max_d", "--max_Lambda", type=float, default=0.2)
+    parser.add_argument("-N_lambda", "--N_Lambda", type=int, default=100)
+    parser.add_argument("-min", "--min_f", type=float, default=0.0)
+    parser.add_argument("-max", "--max_f", type=float, default=1.0)
+    parser.add_argument("-N_f", "--N_f", type=int, default=1)
+    parser.add_argument("-L", "--boundary", type=float, default=2.0)
     parser.add_argument("-bin", "--N_bins", type=int, default=40)
     parser.add_argument("-g", "--gamma", type=float, default=1.0)
-    parser.add_argument("-f", "--slope", type=float, default=1.0)
     parser.add_argument("-T", "--temperature", type=float, default=1.0)
     parser.add_argument("-tau", "--tau", type=float, default=5.0)
     parser.add_argument("-Da", "--Da", type=float, default=5.0)
     parser.add_argument("-dt", "--delta_t", type=float, default=0.01)
     parser.add_argument("-init", "--initial", type=int, default=10000)
-    parser.add_argument("-sam", "--sampling", type=int, default=10000)
+    parser.add_argument("-sam", "--sampling", type=int, default=100000)
 
     args = parser.parse_args()
 
@@ -338,16 +339,19 @@ if __name__ == '__main__':
             args.max_Lambda, args.N_Lambda, dtype=float
         )
 
-        for Lambda in Lambdas:
+        slopes = np.linspace(args.min_f, args.max_f,
+                             args.N_f, endpoint=False, dtype=float)
+
+        for Lambda, slope in itertools.product(Lambdas, slopes):
             parameter = Parameter(
+                Lambda=Lambda,
+                slope=slope,
                 N_particle=args.N_particle,
                 N_ensemble=args.N_ensemble,
                 velocity=args.velocity,
-                Lambda=Lambda,
                 boundary=args.boundary,
                 N_bins=args.N_bins,
                 gamma=args.gamma,
-                slope=args.slope,
                 temperature=args.temperature,
                 tau=args.tau,
                 Da=args.Da,

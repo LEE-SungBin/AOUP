@@ -113,8 +113,9 @@ def load_result(
     # * Read files
     results: list[dict[str, Any]] = []
     for file in result_files:
-        with open(file, "rb") as f:
-            results.append(pickle.load(f))
+        if file.is_file():
+            with open(file, "rb") as f:
+                results.append(pickle.load(f))
 
     # * Concatenate to single dataframe
     df = pd.DataFrame(results)
