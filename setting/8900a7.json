@@ -1,1 +1,0 @@
-{"key": "8900a7", "N_particle": 1, "N_ensemble": 1000000, "velocity": 0.5, "Lambda": 0.005, "boundary": 5.0, "N_bins": 40, "gamma": 1.0, "slope": 1.0, "temperature": 1.0, "tau": 5.0, "Da": 5.0, "delta_t": 0.001, "initial": 10000, "sampling": 100000}

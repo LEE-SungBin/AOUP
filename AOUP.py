@@ -134,8 +134,8 @@ class AOUP:
         }
         output.update(asdict(self.parameter))
 
-        with open(setting_dir / f"{name}.json", "w") as file:
-            json.dump(output, file)  # * save setting
+        # with open(setting_dir / f"{name}.json", "w") as file:
+        #     json.dump(output, file)  # * save setting
 
         result = {
             "drag": drag,
@@ -147,8 +147,7 @@ class AOUP:
             pickle.dump(output, file)  # * save result
 
         log = (
-            f"{datetime.now().replace(microsecond=0)} | {self.parameter.to_log()} | drag={
-                np.round(np.mean(drag),5)}, std={np.round(np.std(drag)/np.sqrt(self.N_ensemble),5)} | {self.Time.to_log()}\n"
+            f"{datetime.now().replace(microsecond=0)} | {self.parameter.to_log()} | drag={np.round(np.mean(drag),5)}, std={np.round(np.std(drag)/np.sqrt(self.N_ensemble),5)} | {self.Time.to_log()}\n"
         )
 
         with open("log.txt", "a") as file:
@@ -289,17 +288,18 @@ if __name__ == '__main__':
 
     parser.add_argument("-N", "--N_particle", type=int, default=1)
     parser.add_argument("-ens", "--N_ensemble", type=int, default=1000000)
-    parser.add_argument("-v", "--velocity", type=float, default=0.5)
-    parser.add_argument("-only", "--only", type=bool,
-                        default=False, choices=[True, False])
+    parser.add_argument("-mode", "--mode", type=str,
+                        default="manual", choices=["manual", "velocity", "Lambda", "slope"])
+    parser.add_argument("-v", "--velocity", type=float, default=1.0)
     parser.add_argument("-d", "--Lambda", type=float, default=1.0)
     parser.add_argument("-f", "--slope", type=float, default=1.0)
-    parser.add_argument("-max_d", "--max_Lambda", type=float, default=0.1)
-    parser.add_argument("-N_lambda", "--N_Lambda", type=int, default=20)
-    parser.add_argument("-min", "--min_f", type=float, default=0.0)
-    parser.add_argument("-max", "--max_f", type=float, default=1.0)
-    parser.add_argument("-N_f", "--N_f", type=int, default=1)
-    parser.add_argument("-L", "--boundary", type=float, default=5.0)
+    parser.add_argument("-max_v", "--max_velocity", type=float, default=10.0)
+    parser.add_argument("-N_v", "--N_velocity", type=int, default=9)
+    parser.add_argument("-max_d", "--max_Lambda", type=float, default=1.0)
+    parser.add_argument("-N_d", "--N_Lambda", type=int, default=7)
+    parser.add_argument("-max_f", "--max_slope", type=float, default=10.0)
+    parser.add_argument("-N_f", "--N_slope", type=int, default=9)
+    parser.add_argument("-L", "--boundary", type=float, default=3.0)
     parser.add_argument("-bin", "--N_bins", type=int, default=40)
     parser.add_argument("-g", "--gamma", type=float, default=1.0)
     parser.add_argument("-T", "--temperature", type=float, default=1.0)
@@ -311,16 +311,16 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if args.only:
+    if args.mode == "manual":
         parameter = Parameter(
-            N_particle=args.N_particle,
-            N_ensemble=args.N_ensemble,
             velocity=args.velocity,
             Lambda=args.Lambda,
+            slope=args.slope,
+            N_particle=args.N_particle,
+            N_ensemble=args.N_ensemble,
             boundary=args.boundary,
             N_bins=args.N_bins,
             gamma=args.gamma,
-            slope=args.slope,
             temperature=args.temperature,
             tau=args.tau,
             Da=args.Da,
@@ -329,27 +329,20 @@ if __name__ == '__main__':
             sampling=args.sampling,
         )
 
-        # print(parameter)
-
         aoup = AOUP(parameter)
         aoup.get_result()
 
-    else:
-        Lambdas = np.linspace(
-            args.max_Lambda/args.N_Lambda,
-            args.max_Lambda, args.N_Lambda, dtype=float
-        )
+    elif args.mode == "velocity":
+        velocities = np.logspace(start=np.log10(
+            args.max_velocity/10**((args.N_velocity-1)/2)), stop=np.log10(args.max_velocity), num=args.N_velocity)
 
-        slopes = np.linspace(args.min_f, args.max_f,
-                             args.N_f, endpoint=False, dtype=float)
-
-        for Lambda, slope in itertools.product(Lambdas, slopes):
+        for velocity in velocities:
             parameter = Parameter(
-                Lambda=Lambda,
-                slope=slope,
+                velocity=velocity,
+                Lambda=args.Lambda,
+                slope=args.slope,
                 N_particle=args.N_particle,
                 N_ensemble=args.N_ensemble,
-                velocity=args.velocity,
                 boundary=args.boundary,
                 N_bins=args.N_bins,
                 gamma=args.gamma,
@@ -361,7 +354,65 @@ if __name__ == '__main__':
                 sampling=args.sampling,
             )
 
-            print(parameter)
+            # print(parameter)
 
             aoup = AOUP(parameter)
             aoup.get_result()
+
+    elif args.mode == "Lambda":
+        Lambdas = np.logspace(start=np.log10(
+            args.max_Lambda/10**((args.N_Lambda-1)/2)), stop=np.log10(args.max_Lambda), num=args.N_Lambda)
+
+        for Lambda in Lambdas:
+            parameter = Parameter(
+                velocity=args.velocity,
+                Lambda=Lambda,
+                slope=args.slope,
+                N_particle=args.N_particle,
+                N_ensemble=args.N_ensemble,
+                boundary=args.boundary,
+                N_bins=args.N_bins,
+                gamma=args.gamma,
+                temperature=args.temperature,
+                tau=args.tau,
+                Da=args.Da,
+                delta_t=args.delta_t,
+                initial=args.initial,
+                sampling=args.sampling,
+            )
+
+            # print(parameter)
+
+            aoup = AOUP(parameter)
+            aoup.get_result()
+
+    elif args.mode == "slope":
+        slopes = np.logspace(start=np.log10(
+            args.max_slope/10**((args.N_slope-1)/2)), stop=np.log10(args.max_slope), num=args.N_slope)
+
+        for slope in slopes:
+            parameter = Parameter(
+                velocity=args.velocity,
+                Lambda=args.Lambda,
+                slope=slope,
+                N_particle=args.N_particle,
+                N_ensemble=args.N_ensemble,
+                boundary=args.boundary,
+                N_bins=args.N_bins,
+                gamma=args.gamma,
+                temperature=args.temperature,
+                tau=args.tau,
+                Da=args.Da,
+                delta_t=args.delta_t,
+                initial=args.initial,
+                sampling=args.sampling,
+            )
+
+            # print(parameter)
+
+            aoup = AOUP(parameter)
+            aoup.get_result()
+
+    else:
+        raise ValueError(
+            "mode should be 'manual', 'velocity', 'Lambda', or 'slope'.")

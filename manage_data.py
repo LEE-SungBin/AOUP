@@ -72,17 +72,19 @@ def get_conditions(
     return conditions
 
 
+def filter_file(f: Path, suffix: str) -> bool:
+    return f.is_file() and (f.suffix == suffix) and f.stat().st_size > 0
+
+
 def get_setting(
     conditions: list[str],
     location: Path = Path("."),
 ) -> Any:
 
-    def filter_file(f: Path) -> bool:
-        return f.is_file() and (f.suffix == ".json") and f.stat().st_size > 0
-
     # * Scan the setting directory and gather result files
     setting_dir = location / f"setting"
-    setting_files = [f for f in setting_dir.iterdir() if filter_file(f)]
+    setting_files = [f for f in setting_dir.iterdir()
+                     if filter_file(f, ".json")]
 
     # * Read files
     settings: list[dict[str, Any]] = []
@@ -106,9 +108,10 @@ def load_result(
 
     # * Scan the result directory and gather result files
     result_dir = location / f"data"
-    result_keys = get_setting(location=location, conditions=conditions)
-    result_files = [result_dir /
-                    f"{result_key}.pkl" for result_key in result_keys]
+    # result_keys = get_setting(location=location, conditions=conditions)
+    # result_files = [result_dir /
+    #                 f"{result_key}.pkl" for result_key in result_keys]
+    result_files = [f for f in result_dir.iterdir() if filter_file(f, ".pkl")]
 
     # * Read files
     results: list[dict[str, Any]] = []
@@ -120,7 +123,13 @@ def load_result(
     # * Concatenate to single dataframe
     df = pd.DataFrame(results)
 
-    return df.sort_values(by=["Lambda", "slope"], ascending=True)
+    if len(conditions) == 0:
+        return df.sort_values(by=["Lambda", "slope"], ascending=True)
+
+    else:
+        return df.query(" and ".join(conditions)).sort_values(by=["Lambda", "slope"], ascending=True)
+
+    # return df.sort_values(by=["Lambda", "slope"], ascending=True)
 
 
 def delete_result(
