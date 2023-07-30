@@ -147,7 +147,8 @@ class AOUP:
             pickle.dump(output, file)  # * save result
 
         log = (
-            f"{datetime.now().replace(microsecond=0)} | {self.parameter.to_log()} | drag={np.round(np.mean(drag),5)} | {self.Time.to_log()}\n"
+            f"{datetime.now().replace(microsecond=0)} | {self.parameter.to_log()} | drag={
+                np.round(np.mean(drag),5)}, std={np.round(np.std(drag)/np.sqrt(self.N_ensemble),5)} | {self.Time.to_log()}\n"
         )
 
         with open("log.txt", "a") as file:
@@ -287,7 +288,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument("-N", "--N_particle", type=int, default=1)
-    parser.add_argument("-ens", "--N_ensemble", type=int, default=100000)
+    parser.add_argument("-ens", "--N_ensemble", type=int, default=1000000)
     parser.add_argument("-v", "--velocity", type=float, default=0.5)
     parser.add_argument("-only", "--only", type=bool,
                         default=False, choices=[True, False])
@@ -298,13 +299,13 @@ if __name__ == '__main__':
     parser.add_argument("-min", "--min_f", type=float, default=0.0)
     parser.add_argument("-max", "--max_f", type=float, default=1.0)
     parser.add_argument("-N_f", "--N_f", type=int, default=1)
-    parser.add_argument("-L", "--boundary", type=float, default=1.0)
+    parser.add_argument("-L", "--boundary", type=float, default=5.0)
     parser.add_argument("-bin", "--N_bins", type=int, default=40)
     parser.add_argument("-g", "--gamma", type=float, default=1.0)
     parser.add_argument("-T", "--temperature", type=float, default=1.0)
     parser.add_argument("-tau", "--tau", type=float, default=5.0)
     parser.add_argument("-Da", "--Da", type=float, default=5.0)
-    parser.add_argument("-dt", "--delta_t", type=float, default=0.01)
+    parser.add_argument("-dt", "--delta_t", type=float, default=0.001)
     parser.add_argument("-init", "--initial", type=int, default=10000)
     parser.add_argument("-sam", "--sampling", type=int, default=100000)
 
@@ -360,7 +361,7 @@ if __name__ == '__main__':
                 sampling=args.sampling,
             )
 
-            # print(parameter)
+            print(parameter)
 
             aoup = AOUP(parameter)
             aoup.get_result()

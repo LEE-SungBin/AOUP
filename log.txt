@@ -1,0 +1,1 @@
+2023-07-29 23:33:10 | N_particle=1, N_ensemble=1000000, velocity=0.5, Lambda=0.005, boundary=5.0, N_bins=40, gamma=1.0, slope=1.0, temperature=1.0, tau=5.0, Da=5.0, delta_t=0.001, initial=10000, sampling=100000 | drag=-0.01006 | force_update=52s, positive_update=84s, position_update=1278s, periodic_update=111s, colored_noise_update=1146s, drag_update=309s, total=3136s
