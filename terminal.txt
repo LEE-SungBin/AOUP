@@ -1,0 +1,3 @@
+spg runs run.txt tenet 176 185 --limit=4
+spg runs run.txt tenet 186 195 --limit=4
+spg runs run.txt tenet 196 201 --limit=4

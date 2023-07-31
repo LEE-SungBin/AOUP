@@ -132,6 +132,35 @@ def load_result(
     # return df.sort_values(by=["Lambda", "slope"], ascending=True)
 
 
+def get_drag_by_velocity(
+    df: pd.DataFrame,
+    velocity: float,
+) -> tuple[npt.NDArray, npt.NDArray]:
+
+    available_slope, available_Lambda = sorted(
+        set(df["slope"].to_numpy())), sorted(set(df["Lambda"].to_numpy()))
+
+    drag, std = (
+        np.zeros((len(available_slope), len(available_Lambda))),
+        np.zeros((len(available_slope), len(available_Lambda))))
+
+    for i, slope in enumerate(available_slope):
+        for j, Lambda in enumerate(available_Lambda):
+            filtered_df = df.query(" and ".join(get_conditions(
+                slope=slope, Lambda=Lambda, velocity=velocity)))
+
+            drags, N_drags = filtered_df["drag"].to_numpy(
+            ), filtered_df["N_ensemble"].to_numpy()
+
+            if len(drags) == 0:
+                continue
+            else:
+                drag[i, j] = np.sum(drags[0])
+                std[i, j] = np.std(drags[0])*np.sqrt(N_drags)
+
+    return drag.transpose(), std.transpose()
+
+
 def delete_result(
     key_names: list[str],
     location: Path = Path("."),

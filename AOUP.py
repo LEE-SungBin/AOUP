@@ -283,11 +283,25 @@ def get_force(N_ensemble, N_particle, positive, negative, slope) -> npt.NDArray:
     return force.reshape(N_ensemble, N_particle)
 
 
+def get_logspace(
+    max_value: float,
+    num: int,
+) -> npt.NDArray:
+
+    logspace = [max_value]
+
+    for i in range(int(np.round((num-1)/2, 0))):
+        logspace.append(max_value*0.3/10**i)
+        logspace.append(max_value*0.1/10**i)
+
+    return np.array(logspace)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument("-N", "--N_particle", type=int, default=1)
-    parser.add_argument("-ens", "--N_ensemble", type=int, default=1000000)
+    parser.add_argument("-ens", "--N_ensemble", type=int, default=250000)
     parser.add_argument("-mode", "--mode", type=str,
                         default="manual", choices=["manual", "velocity", "Lambda", "slope"])
     parser.add_argument("-v", "--velocity", type=float, default=1.0)
@@ -333,8 +347,8 @@ if __name__ == '__main__':
         aoup.get_result()
 
     elif args.mode == "velocity":
-        velocities = np.logspace(start=np.log10(
-            args.max_velocity/10**((args.N_velocity-1)/2)), stop=np.log10(args.max_velocity), num=args.N_velocity)
+        velocities = get_logspace(
+            max_value=args.max_velocity, num=args.N_velocity)
 
         for velocity in velocities:
             parameter = Parameter(
@@ -360,8 +374,8 @@ if __name__ == '__main__':
             aoup.get_result()
 
     elif args.mode == "Lambda":
-        Lambdas = np.logspace(start=np.log10(
-            args.max_Lambda/10**((args.N_Lambda-1)/2)), stop=np.log10(args.max_Lambda), num=args.N_Lambda)
+        Lambdas = get_logspace(
+            max_value=args.max_Lambda, num=args.N_Lambda)
 
         for Lambda in Lambdas:
             parameter = Parameter(
@@ -387,8 +401,8 @@ if __name__ == '__main__':
             aoup.get_result()
 
     elif args.mode == "slope":
-        slopes = np.logspace(start=np.log10(
-            args.max_slope/10**((args.N_slope-1)/2)), stop=np.log10(args.max_slope), num=args.N_slope)
+        slopes = get_logspace(
+            max_value=args.max_slope, num=args.N_slope)
 
         for slope in slopes:
             parameter = Parameter(
