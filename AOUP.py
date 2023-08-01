@@ -294,7 +294,7 @@ def get_logspace(
         logspace.append(max_value*0.3/10**i)
         logspace.append(max_value*0.1/10**i)
 
-    return np.array(logspace)
+    return np.array(logspace)[::-1]
 
 
 if __name__ == '__main__':
