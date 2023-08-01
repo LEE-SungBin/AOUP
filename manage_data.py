@@ -135,30 +135,67 @@ def load_result(
 def get_drag_by_velocity(
     df: pd.DataFrame,
     velocity: float,
-) -> tuple[npt.NDArray, npt.NDArray]:
+) -> npt.NDArray:
 
     available_slope, available_Lambda = sorted(
         set(df["slope"].to_numpy())), sorted(set(df["Lambda"].to_numpy()))
 
-    drag, std = (
-        np.zeros((len(available_slope), len(available_Lambda))),
-        np.zeros((len(available_slope), len(available_Lambda))))
+    drag = np.zeros((len(available_slope), len(available_Lambda)))
+    for i, slope in enumerate(available_slope):
+        for j, Lambda in enumerate(available_Lambda):
+            filtered_df = df.query(" and ".join(get_conditions(
+                slope=slope, Lambda=Lambda, velocity=velocity)))
+
+            drags = filtered_df["drag"].to_numpy()
+
+            if len(drags) == 0:
+                continue
+            else:
+                N_drags = len(drags[0])
+                drag[i, j] = np.mean(drags[0]) * N_drags
+
+    return drag.transpose()
+
+
+def get_std_by_velocity(
+    df: pd.DataFrame,
+    velocity: float,
+) -> npt.NDArray:
+
+    available_slope, available_Lambda = sorted(
+        set(df["slope"].to_numpy())), sorted(set(df["Lambda"].to_numpy()))
+
+    std = np.zeros((len(available_slope), len(available_Lambda)))
 
     for i, slope in enumerate(available_slope):
         for j, Lambda in enumerate(available_Lambda):
             filtered_df = df.query(" and ".join(get_conditions(
                 slope=slope, Lambda=Lambda, velocity=velocity)))
 
-            drags, N_drags = filtered_df["drag"].to_numpy(
-            ), filtered_df["N_ensemble"].to_numpy()
+            drags = filtered_df["drag"].to_numpy()
 
             if len(drags) == 0:
                 continue
             else:
-                drag[i, j] = np.sum(drags[0])
-                std[i, j] = np.std(drags[0])*np.sqrt(N_drags)
+                N_drags = len(drags[0])
+                std[i, j] = np.std(drags[0])/np.sqrt(N_drags) * N_drags
 
-    return drag.transpose(), std.transpose()
+    return std.transpose()
+
+
+def get_log_scale(
+    df: pd.DataFrame,
+    velocity: float,
+) -> npt.NDArray:
+
+    drag = get_drag_by_velocity(df, velocity)
+
+    pm_flag = drag/np.abs(drag)
+    data = np.log10(np.abs(drag))
+    data *= pm_flag
+    data[np.isnan(data)] = 0.0
+
+    return data
 
 
 def delete_result(
