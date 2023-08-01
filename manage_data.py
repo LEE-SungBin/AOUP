@@ -127,7 +127,7 @@ def load_result(
         return df.sort_values(by=["Lambda", "slope"], ascending=True)
 
     else:
-        return df.query(" and ".join(conditions)).sort_values(by=["Lambda", "slope"], ascending=True)
+        return df.query(" and ".join(conditions)).sort_values(by=["velocity", "Lambda", "slope"], ascending=True)
 
     # return df.sort_values(by=["Lambda", "slope"], ascending=True)
 
@@ -141,6 +141,7 @@ def get_drag_by_velocity(
         set(df["slope"].to_numpy())), sorted(set(df["Lambda"].to_numpy()))
 
     drag = np.zeros((len(available_slope), len(available_Lambda)))
+
     for i, slope in enumerate(available_slope):
         for j, Lambda in enumerate(available_Lambda):
             filtered_df = df.query(" and ".join(get_conditions(

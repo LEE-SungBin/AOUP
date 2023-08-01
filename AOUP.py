@@ -100,11 +100,7 @@ class AOUP:
         self.position = self.rng.uniform(
             low=-self.boundary/2, high=self.boundary/2, size=(self.N_ensemble, self.N_particle))
 
-        self.positive = (0.0 < self.position) & (
-            self.position < self.Lambda / 2)
-
-        self.negative = (- self.Lambda / 2 <
-                         self.position) & (self.position < 0.0)
+        self.update_positive_negative()
 
         self.colored_noise = self.rng.normal(
             loc=0.0, scale=1.0, size=(self.N_ensemble, self.N_particle))
@@ -156,8 +152,6 @@ class AOUP:
     def time_evolution(self) -> None:  # * time evolution of AOUPs
         now = time.perf_counter()
         force = self.get_force()
-        # force = get_force(self.N_ensemble, self.N_particle,
-        #                   self.positive, self.negative, self.slope)
         self.Time.force_update += time.perf_counter() - now
 
         now = time.perf_counter()
@@ -167,19 +161,16 @@ class AOUP:
             loc=0.0,  # * mean
             scale=np.sqrt(2 * self.temperature / \
                           self.gamma * self.delta_t),  # * std
-            size=(self.N_ensemble, self.N_particle)
+            size=(self.N_ensemble, self.N_particle),
         )
         self.Time.position_update += time.perf_counter() - now
 
         now = time.perf_counter()
-        self.periodic_boundary()
+        self.update_periodic_boundary()
         self.Time.periodic_update += time.perf_counter() - now
 
         now = time.perf_counter()
-        self.positive = (
-            0.0 < self.position) & (self.position < self.Lambda / 2)
-        self.negative = (
-            - self.Lambda / 2 < self.position) & (self.position < 0.0)
+        self.update_positive_negative()
         self.Time.positive_update += time.perf_counter() - now
 
         now = time.perf_counter()
@@ -211,8 +202,14 @@ class AOUP:
 
         return positive_drag - negative_drag
 
+    def update_positive_negative(self) -> None:
+        self.positive = (
+            0.0 < self.position) & (self.position < self.Lambda / 2)
+        self.negative = (
+            - self.Lambda / 2 < self.position) & (self.position < 0.0)
+
     # * periodic boundary condition
-    def periodic_boundary(self) -> None:
+    def update_periodic_boundary(self) -> None:
 
         self.position[self.position < -self.boundary / 2] += self.boundary
         self.position[self.position > self.boundary / 2] -= self.boundary
