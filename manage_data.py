@@ -124,7 +124,7 @@ def load_result(
     df = pd.DataFrame(results)
 
     if len(conditions) == 0:
-        return df.sort_values(by=["Lambda", "slope"], ascending=True)
+        return df.sort_values(by=["velocity", "Lambda", "slope"], ascending=True)
 
     else:
         return df.query(" and ".join(conditions)).sort_values(by=["velocity", "Lambda", "slope"], ascending=True)
@@ -231,16 +231,16 @@ def delete_all(
     setting_dir = location / "setting"
     data_dir = location / "data"
 
-    settings = [f for f in setting_dir.iterdir()]
+    # settings = [f for f in setting_dir.iterdir()]
     datas = [f for f in data_dir.iterdir()]
 
     del_setting, del_data = 0, 0
-    for setting in settings:
-        try:
-            setting.unlink()
-            del_setting += 1
-        except OSError:
-            print(f"No setting found for key in setting: {setting}")
+    # for setting in settings:
+    #     try:
+    #         setting.unlink()
+    #         del_setting += 1
+    #     except OSError:
+    #         print(f"No setting found for key in setting: {setting}")
     for data in datas:
         try:
             data.unlink()

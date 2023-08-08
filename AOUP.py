@@ -134,7 +134,8 @@ class AOUP:
         #     json.dump(output, file)  # * save setting
 
         result = {
-            "drag": drag,
+            "drag": np.mean(drag),
+            "std": np.std(drag) / np.sqrt(self.N_ensemble),
             "time": time.perf_counter()-now,
         }
         output.update(result)
@@ -214,17 +215,20 @@ class AOUP:
         self.position[self.position < -self.boundary / 2] += self.boundary
         self.position[self.position > self.boundary / 2] -= self.boundary
 
-    def animation(self) -> None:  # * animate histogram
+    def animation(self, frames: int = 1000) -> None:  # * animate histogram
         self.fig, self.ax = plt.subplots(tight_layout=True)
         self.bins = np.linspace(-self.boundary/2,
                                 self.boundary/2, self.N_bins+1)
 
-        self.ax.hist(self.position.reshape(-1), bins=self.bins)
+        self.ax.hist(self.position[0], bins=self.bins)
+        self.ax.set_xlim(left=-self.boundary/2, right=self.boundary/2)
+        self.ax.set_ylim(bottom=0.0, top=self.N_particle/self.N_bins*1.5)
 
         ani = animation.FuncAnimation(
-            fig=self.fig, func=self.update, frames=1000, interval=0, blit=False)
+            fig=self.fig, func=self.update, frames=frames, interval=0, blit=False)
 
-        ani.save(f"test.mp4", fps=30, extra_args=['-vcodec', 'libx264'])
+        ani.save(f"frames={frames}.mp4", fps=30,
+                 extra_args=['-vcodec', 'libx264'])
 
     def update(self, i: int) -> None:  # * update animation
         print(i, end=" ")
@@ -250,8 +254,8 @@ class AOUP:
         self.ax.plot(lx, f(lx), color="b")
         self.ax.plot(rx, g(rx), color="r")
 
-        self.ax.set_xlim(-self.boundary/2, self.boundary/2)
-        # self.ax.set_ylim(0, self.N_particle/self.N_bins * 1.5)
+        self.ax.set_xlim(left=-self.boundary/2, right=self.boundary/2)
+        self.ax.set_ylim(bottom=0.0, top=self.N_particle/self.N_bins*1.5)
 
         self.ax.text(
             0.99, 0.99, f"iter = {i+1}",
@@ -285,7 +289,7 @@ def get_logspace(
     num: int,
 ) -> npt.NDArray:
 
-    logspace = [max_value]
+    logspace: list[float] = [max_value]
 
     for i in range(int(np.round((num-1)/2, 0))):
         logspace.append(max_value*0.3/10**i)
@@ -310,7 +314,7 @@ if __name__ == '__main__':
     parser.add_argument("-N_d", "--N_Lambda", type=int, default=7)
     parser.add_argument("-max_f", "--max_slope", type=float, default=10.0)
     parser.add_argument("-N_f", "--N_slope", type=int, default=9)
-    parser.add_argument("-L", "--boundary", type=float, default=3.0)
+    parser.add_argument("-L", "--boundary", type=float, default=10.0)
     parser.add_argument("-bin", "--N_bins", type=int, default=40)
     parser.add_argument("-g", "--gamma", type=float, default=1.0)
     parser.add_argument("-T", "--temperature", type=float, default=1.0)
