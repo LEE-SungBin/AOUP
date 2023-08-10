@@ -97,13 +97,15 @@ class AOUP:
     def set_zero(self) -> None:  # * initialize position and noise
         self.rng = np.random.default_rng()
 
-        self.position = self.rng.uniform(
+        init_position = self.rng.uniform(
             low=-self.boundary/2, high=self.boundary/2, size=(self.N_ensemble, self.N_particle))
+        self.position = np.array([init_position, init_position])
 
         self.update_positive_negative()
 
-        self.colored_noise = self.rng.normal(
+        init_noise = self.rng.normal(
             loc=0.0, scale=1.0, size=(self.N_ensemble, self.N_particle))
+        self.colored_noise = np.array([init_noise, init_noise])
 
     def get_result(self) -> None:  # * get average and std of drag
         now = time.perf_counter()
@@ -152,18 +154,22 @@ class AOUP:
 
     def time_evolution(self) -> None:  # * time evolution of AOUPs
         now = time.perf_counter()
-        force = self.get_force()
+        force = self.get_force()[1]
         self.Time.force_update += time.perf_counter() - now
 
         now = time.perf_counter()
-        self.position += (force / self.gamma - self.velocity) * self.delta_t
-        self.position += self.colored_noise * self.delta_t
-        self.position += self.rng.normal(
+        temp_position = self.position[1] + (force / self.gamma - self.velocity) * self.delta_t
+        temp_position += self.colored_noise[1] * self.delta_t
+        temp_position += self.rng.normal(
             loc=0.0,  # * mean
             scale=np.sqrt(2 * self.temperature / \
                           self.gamma * self.delta_t),  # * std
             size=(self.N_ensemble, self.N_particle),
         )
+
+        self.position[0] = 1 / 2 * (self.position[0] + temp_position)
+        self.position[1] = temp_position
+
         self.Time.position_update += time.perf_counter() - now
 
         now = time.perf_counter()
@@ -175,17 +181,21 @@ class AOUP:
         self.Time.positive_update += time.perf_counter() - now
 
         now = time.perf_counter()
-        self.colored_noise += - self.colored_noise / self.tau * self.delta_t
-        self.colored_noise += self.rng.normal(
+        temp_noise = self.colored_noise[1] - self.colored_noise[1] / self.tau * self.delta_t
+        temp_noise += self.rng.normal(
             loc=0.0,  # * mean
             scale=np.sqrt(2 * self.Da / self.tau**2 * self.delta_t),  # * std
             size=(self.N_ensemble, self.N_particle)
         )
+
+        self.colored_noise[0] = 1 / 2 * (self.colored_noise[0] + temp_noise)
+        self.colored_noise[1] = temp_noise
+
         self.Time.colored_noise_update += time.perf_counter() - now
 
     def get_force(self) -> npt.NDArray:
 
-        force = np.zeros(shape=(self.N_ensemble, self.N_particle))
+        force = np.zeros(shape=(2, self.N_ensemble, self.N_particle))
 
         force[self.positive] = self.slope
         force[self.negative] = - self.slope
@@ -196,8 +206,11 @@ class AOUP:
 
         now = time.perf_counter()
 
-        positive_drag = self.positive.astype(np.int64).sum(axis=1)
-        negative_drag = self.negative.astype(np.int64).sum(axis=1)
+        positive_drag = self.positive[1].astype(np.int64).sum(axis=1)
+        negative_drag = self.negative[1].astype(np.int64).sum(axis=1)
+
+        assert len(positive_drag) == self.N_ensemble
+        assert len(negative_drag) == self.N_ensemble
 
         self.Time.drag_update += time.perf_counter() - now
 
@@ -220,7 +233,7 @@ class AOUP:
         self.bins = np.linspace(-self.boundary/2,
                                 self.boundary/2, self.N_bins+1)
 
-        self.ax.hist(self.position[0], bins=self.bins)
+        self.ax.hist(self.position[1,0], bins=self.bins)
         self.ax.set_xlim(left=-self.boundary/2, right=self.boundary/2)
         self.ax.set_ylim(bottom=0.0, top=self.N_particle/self.N_bins*1.5)
 
@@ -235,7 +248,7 @@ class AOUP:
         self.time_evolution()
 
         self.ax.cla()
-        self.ax.hist(self.position[0], bins=self.bins)
+        self.ax.hist(self.position[1,0], bins=self.bins)
         self.ax.axvline(-self.Lambda/2, linestyle="--", color="k")
         self.ax.axvline(0.0, linestyle="--", color="k")
         self.ax.axvline(self.Lambda/2, linestyle="--", color="k")
@@ -270,6 +283,47 @@ class AOUP:
             transform=self.ax.transAxes,
             color='black', fontsize=20
         )
+    
+    def phase_space(self, frames: int = 1000, fps: int = 100) -> None:
+        init_position = np.full(shape=(self.N_ensemble, self.N_particle), fill_value=0.0)
+        self.position = np.array([init_position, init_position])
+        
+        self.fig, self.ax = plt.subplots(tight_layout=True)
+        self.ax.set_xlim([-self.boundary/2, self.boundary/2])
+        self.ax.set_ylim([-3, 3])
+
+        position_list, noise_list = [], []
+        self.line, = self.ax.plot(position_list, noise_list)
+        
+        def animate_phase_space(i: int):
+            print(i, end=" ")
+            self.time_evolution()
+
+            self.ax.cla()
+            self.ax.set_xlim([-self.boundary/2, self.boundary/2])
+            self.ax.set_ylim([-3, 3])
+            position_list.append(self.position[1,0,0])
+            noise_list.append(self.colored_noise[1,0,0])
+            self.line, = self.ax.plot(position_list, noise_list)
+
+            self.ax.set_title(f"Phase space", fontsize=25)
+            self.ax.set_xlabel("Particle position", fontsize=20)
+            self.ax.set_ylabel("Colored noise", fontsize=20)
+
+            self.ax.text(
+            0.99, 0.99, f"iteration = {i+1}\ndelta t = {self.delta_t}",
+            verticalalignment="top", horizontalalignment='right',
+            transform=self.ax.transAxes,
+            color='black', fontsize=20
+        )
+            
+            # return self.line,
+        
+        ani = animation.FuncAnimation(
+            fig=self.fig, func=animate_phase_space, frames=frames, blit=False)
+
+        ani.save(f"phase space frames={frames}.mp4", fps=fps,
+                 extra_args=['-vcodec', 'libx264'])
 
 
 # * get external force from object
@@ -302,7 +356,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument("-N", "--N_particle", type=int, default=1)
-    parser.add_argument("-ens", "--N_ensemble", type=int, default=250000)
+    parser.add_argument("-ens", "--N_ensemble", type=int, default=10000)
     parser.add_argument("-mode", "--mode", type=str,
                         default="manual", choices=["manual", "velocity", "Lambda", "slope"])
     parser.add_argument("-v", "--velocity", type=float, default=1.0)
