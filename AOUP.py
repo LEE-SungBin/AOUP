@@ -158,7 +158,8 @@ class AOUP:
         self.Time.force_update += time.perf_counter() - now
 
         now = time.perf_counter()
-        temp_position = self.position[1] + (force / self.gamma - self.velocity) * self.delta_t
+        temp_position = self.position[1] + \
+            (force / self.gamma - self.velocity) * self.delta_t
         temp_position += self.colored_noise[1] * self.delta_t
         temp_position += self.rng.normal(
             loc=0.0,  # * mean
@@ -181,7 +182,8 @@ class AOUP:
         self.Time.positive_update += time.perf_counter() - now
 
         now = time.perf_counter()
-        temp_noise = self.colored_noise[1] - self.colored_noise[1] / self.tau * self.delta_t
+        temp_noise = self.colored_noise[1] - \
+            self.colored_noise[1] / self.tau * self.delta_t
         temp_noise += self.rng.normal(
             loc=0.0,  # * mean
             scale=np.sqrt(2 * self.Da / self.tau**2 * self.delta_t),  # * std
@@ -233,7 +235,7 @@ class AOUP:
         self.bins = np.linspace(-self.boundary/2,
                                 self.boundary/2, self.N_bins+1)
 
-        self.ax.hist(self.position[1,0], bins=self.bins)
+        self.ax.hist(self.position[1, 0], bins=self.bins)
         self.ax.set_xlim(left=-self.boundary/2, right=self.boundary/2)
         self.ax.set_ylim(bottom=0.0, top=self.N_particle/self.N_bins*1.5)
 
@@ -248,7 +250,7 @@ class AOUP:
         self.time_evolution()
 
         self.ax.cla()
-        self.ax.hist(self.position[1,0], bins=self.bins)
+        self.ax.hist(self.position[1, 0], bins=self.bins)
         self.ax.axvline(-self.Lambda/2, linestyle="--", color="k")
         self.ax.axvline(0.0, linestyle="--", color="k")
         self.ax.axvline(self.Lambda/2, linestyle="--", color="k")
@@ -283,18 +285,19 @@ class AOUP:
             transform=self.ax.transAxes,
             color='black', fontsize=20
         )
-    
+
     def phase_space(self, frames: int = 1000, fps: int = 100) -> None:
-        init_position = np.full(shape=(self.N_ensemble, self.N_particle), fill_value=0.0)
+        init_position = np.full(
+            shape=(self.N_ensemble, self.N_particle), fill_value=0.0)
         self.position = np.array([init_position, init_position])
-        
+
         self.fig, self.ax = plt.subplots(tight_layout=True)
         self.ax.set_xlim([-self.boundary/2, self.boundary/2])
         self.ax.set_ylim([-3, 3])
 
         position_list, noise_list = [], []
         self.line, = self.ax.plot(position_list, noise_list)
-        
+
         def animate_phase_space(i: int):
             print(i, end=" ")
             self.time_evolution()
@@ -302,8 +305,8 @@ class AOUP:
             self.ax.cla()
             self.ax.set_xlim([-self.boundary/2, self.boundary/2])
             self.ax.set_ylim([-3, 3])
-            position_list.append(self.position[1,0,0])
-            noise_list.append(self.colored_noise[1,0,0])
+            position_list.append(self.position[1, 0, 0])
+            noise_list.append(self.colored_noise[1, 0, 0])
             self.line, = self.ax.plot(position_list, noise_list)
 
             self.ax.set_title(f"Phase space", fontsize=25)
@@ -311,14 +314,14 @@ class AOUP:
             self.ax.set_ylabel("Colored noise", fontsize=20)
 
             self.ax.text(
-            0.99, 0.99, f"iteration = {i+1}\ndelta t = {self.delta_t}",
-            verticalalignment="top", horizontalalignment='right',
-            transform=self.ax.transAxes,
-            color='black', fontsize=20
-        )
-            
+                0.99, 0.99, f"iteration = {i+1}\ndelta t = {self.delta_t}",
+                verticalalignment="top", horizontalalignment='right',
+                transform=self.ax.transAxes,
+                color='black', fontsize=20
+            )
+
             # return self.line,
-        
+
         ani = animation.FuncAnimation(
             fig=self.fig, func=animate_phase_space, frames=frames, blit=False)
 
