@@ -140,22 +140,25 @@ def get_drag_by_velocity(
     available_slope, available_Lambda = sorted(
         set(df["slope"].to_numpy())), sorted(set(df["Lambda"].to_numpy()))
 
-    drag = np.zeros((len(available_slope), len(available_Lambda)))
+    drags = np.zeros((len(available_slope), len(available_Lambda)))
 
     for i, slope in enumerate(available_slope):
         for j, Lambda in enumerate(available_Lambda):
             filtered_df = df.query(" and ".join(get_conditions(
                 slope=slope, Lambda=Lambda, velocity=velocity)))
 
-            drags = filtered_df["drag"].to_numpy()
+            drag = filtered_df["drag"].to_numpy()
+            N_ensemble = filtered_df["N_ensemble"].to_numpy()
 
-            if len(drags) == 0:
+            if len(drag) == 0:
                 continue
             else:
-                N_drags = len(drags[0])
-                drag[i, j] = np.mean(drags[0]) * N_drags
+                assert np.abs(
+                    drag * N_ensemble) >= 1.0, f"drag greater or equal to 1 expected, got: {np.abs(drag * N_ensemble)}"
 
-    return drag.transpose()
+                drags[i, j] = drag * filtered_df["N_ensemble"].to_numpy()
+
+    return drags.transpose()
 
 
 def get_std_by_velocity(
@@ -166,22 +169,21 @@ def get_std_by_velocity(
     available_slope, available_Lambda = sorted(
         set(df["slope"].to_numpy())), sorted(set(df["Lambda"].to_numpy()))
 
-    std = np.zeros((len(available_slope), len(available_Lambda)))
+    stds = np.zeros((len(available_slope), len(available_Lambda)))
 
     for i, slope in enumerate(available_slope):
         for j, Lambda in enumerate(available_Lambda):
             filtered_df = df.query(" and ".join(get_conditions(
                 slope=slope, Lambda=Lambda, velocity=velocity)))
 
-            drags = filtered_df["drag"].to_numpy()
+            std = filtered_df["std"].to_numpy()
 
-            if len(drags) == 0:
+            if len(std) == 0:
                 continue
             else:
-                N_drags = len(drags[0])
-                std[i, j] = np.std(drags[0])/np.sqrt(N_drags) * N_drags
+                stds[i, j] = std * filtered_df["N_ensemble"].to_numpy()
 
-    return std.transpose()
+    return stds.transpose()
 
 
 def get_log_scale(
