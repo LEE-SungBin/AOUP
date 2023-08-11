@@ -1,6 +1,7 @@
 import numpy as np
 import numpy.typing as npt
 from matplotlib.axes import Axes
+from matplotlib.colors import Normalize, LogNorm, LinearSegmentedColormap
 
 arr = npt.NDArray[np.generic]
 
@@ -163,3 +164,22 @@ def log_log_line(
         ax.plot([x0, x1], [y0, y1], **kwargs)
 
     return x1
+
+
+def get_colormap(
+    cvals: list[float],
+    colors: list[str],
+    mode: str = "linear",
+) -> tuple[LinearSegmentedColormap, Normalize]:
+
+    if mode == "linear":
+        tuples = list(
+            zip(map(Normalize(min(cvals), max(cvals)), cvals), colors))
+        return LinearSegmentedColormap.from_list("", tuples), Normalize(min(cvals), max(cvals))
+
+    elif mode == "log":
+        tuples = list(
+            zip(map(LogNorm(min(cvals), max(cvals)), cvals), colors))
+        return LinearSegmentedColormap.from_list("", tuples), LogNorm(min(cvals), max(cvals))
+
+    raise ValueError("mode must be either 'linear'(default) or 'log'")
