@@ -6,3 +6,11 @@ spg runs run.txt tenet 172 174 --limit=8
 spg runs run.txt tenet 176 180 --limit=8
 spg runs run.txt tenet 181 185 --limit=8
 spg runs run.txt tenet 186 189 --limit=8
+
+spg runs run.txt tenet 151 155 --limit=8
+spg runs run.txt tenet 156 160 --limit=8
+spg runs run.txt tenet 161 165 --limit=8
+spg runs run.txt tenet 166 169 --limit=8
+spg runs run.txt tenet 182 183 --limit=8
+spg runs run.txt tenet 187 189 --limit=8
+spg runs run.txt tenet 194 199 --limit=8
