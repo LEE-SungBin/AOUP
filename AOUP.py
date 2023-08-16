@@ -32,6 +32,7 @@ class Parameter:
     delta_t: float
     initial: int
     sampling: int
+    interval: int
 
     def to_log(self) -> str:
         return ", ".join(
@@ -93,6 +94,7 @@ class AOUP:
         # * number of iter to remove initial effect
         self.initial = self.parameter.initial
         self.sampling = self.parameter.sampling  # * number of iter to collect samples
+        self.interval = self.parameter.interval  # * iteration interval of collection
 
     def set_zero(self) -> None:  # * initialize position and noise
         self.rng = np.random.default_rng()
@@ -114,11 +116,12 @@ class AOUP:
             self.time_evolution()  # * update self.position and self.colored_noise
 
         drag = np.zeros(self.N_ensemble)  # * [self.N_ensemble]
-        for _ in range(self.sampling):
+        for i in range(self.sampling * self.interval):
             self.time_evolution()
             # * time average of drag (Ergodic hypothesis: time average = ensemble average)
-            drag += self.get_drag()
-            # drag += self.get_drag() / self.sampling
+            if i % self.interval == self.interval - 1:
+                drag += self.get_drag()
+                # drag += self.get_drag() / self.sampling
 
         self.Time.total = time.perf_counter() - now
 
@@ -380,6 +383,7 @@ if __name__ == '__main__':
     parser.add_argument("-dt", "--delta_t", type=float, default=0.001)
     parser.add_argument("-init", "--initial", type=int, default=10000)
     parser.add_argument("-sam", "--sampling", type=int, default=100000)
+    parser.add_argument("-int", "--interval", type=int, default=1)
 
     args = parser.parse_args()
 
@@ -399,6 +403,7 @@ if __name__ == '__main__':
             delta_t=args.delta_t,
             initial=args.initial,
             sampling=args.sampling,
+            interval=args.interval,
         )
 
         aoup = AOUP(parameter)
@@ -424,6 +429,7 @@ if __name__ == '__main__':
                 delta_t=args.delta_t,
                 initial=args.initial,
                 sampling=args.sampling,
+                interval=args.interval,
             )
 
             # print(parameter)
@@ -451,6 +457,7 @@ if __name__ == '__main__':
                 delta_t=args.delta_t,
                 initial=args.initial,
                 sampling=args.sampling,
+                interval=args.interval,
             )
 
             # print(parameter)
@@ -478,6 +485,7 @@ if __name__ == '__main__':
                 delta_t=args.delta_t,
                 initial=args.initial,
                 sampling=args.sampling,
+                interval=args.interval,
             )
 
             # print(parameter)
