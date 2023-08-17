@@ -88,7 +88,7 @@ class AOUP:
         self.tau = self.parameter.tau
         self.Da = self.parameter.Da              # * coefficients of colored noise
         self.delta_t = self.parameter.delta_t    # * update time interval
-        # * number of iter to remove initial effect
+        # * number of iteration to remove initial effect
         self.initial = self.parameter.initial
         self.sampling = self.parameter.sampling  # * number of iter to collect samples
         self.interval = self.parameter.interval  # * iteration interval of collection
@@ -97,12 +97,14 @@ class AOUP:
         self.rng = np.random.default_rng()
 
         self.position = self.rng.uniform(
-            low=-self.boundary/2, high=self.boundary/2, size=(self.N_ensemble, self.N_particle))
+            low=-self.boundary/2, high=self.boundary/2, size=(self.N_ensemble, self.N_particle)
+        )
 
         self.update_positive_negative()
 
         self.colored_noise = self.rng.normal(
-            loc=0.0, scale=1.0, size=(self.N_ensemble, self.N_particle))
+            loc=0.0, scale=1.0, size=(self.N_ensemble, self.N_particle)
+        )
 
     def run_AOUP(self) -> None:  # * get average and std of drag
         self.start = time.perf_counter()
@@ -124,6 +126,8 @@ class AOUP:
         self.save_result(drag)
 
     def save_result(self, drag: npt.NDArray) -> None:
+        assert drag.shape == (self.N_ensemble, )
+
         key = hashlib.sha1(str(self.parameter).encode()).hexdigest()[:6]
         data_dir, setting_dir = Path("data"), Path("setting")
         data_dir.mkdir(parents=True, exist_ok=True)
@@ -352,7 +356,7 @@ if __name__ == '__main__':
     parser.add_argument("-mode", "--mode", type=str,
                         default="manual", choices=["manual", "velocity", "Lambda", "slope"])
     parser.add_argument("-v", "--velocity", type=float, default=1.0)
-    parser.add_argument("-d", "--Lambda", type=float, default=1.0)
+    parser.add_argument("-d", "--Lambda", type=float, default=0.1)
     parser.add_argument("-f", "--slope", type=float, default=1.0)
     parser.add_argument("-max_v", "--max_velocity", type=float, default=10.0)
     parser.add_argument("-N_v", "--N_velocity", type=int, default=9)
@@ -368,7 +372,7 @@ if __name__ == '__main__':
     parser.add_argument("-Da", "--Da", type=float, default=5.0)
     parser.add_argument("-dt", "--delta_t", type=float, default=0.001)
     parser.add_argument("-init", "--initial", type=int, default=10000)
-    parser.add_argument("-sam", "--sampling", type=int, default=100000)
+    parser.add_argument("-sam", "--sampling", type=int, default=100)
     parser.add_argument("-int", "--interval", type=int, default=1)
 
     args = parser.parse_args()
