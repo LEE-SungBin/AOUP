@@ -149,6 +149,7 @@ def get_drag_by_velocity(
 
             drag = filtered_df["drag"].to_numpy()
             N_ensemble = filtered_df["N_ensemble"].to_numpy()
+            sampling = filtered_df["sampling"].to_numpy()
 
             if len(drag) == 0:
                 continue
@@ -156,7 +157,7 @@ def get_drag_by_velocity(
                 assert np.abs(
                     drag * N_ensemble) >= 1.0, f"drag greater or equal to 1 expected, got: {np.abs(drag * N_ensemble)}"
 
-                drags[i, j] = drag * N_ensemble
+                drags[i, j] = drag / sampling
 
     return drags.transpose()
 
@@ -178,11 +179,12 @@ def get_std_by_velocity(
 
             std = filtered_df["std"].to_numpy()
             N_ensemble = filtered_df["N_ensemble"].to_numpy()
+            sampling = filtered_df["sampling"].to_numpy()
 
             if len(std) == 0:
                 continue
             else:
-                stds[i, j] = std * N_ensemble
+                stds[i, j] = std / sampling
 
     return stds.transpose()
 

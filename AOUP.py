@@ -271,6 +271,9 @@ class AOUP:
             self.ax.set_xlim(left=-self.boundary/2, right=self.boundary/2)
             self.ax.set_ylim(bottom=0.0, top=self.N_particle/self.N_bins*1.5)
 
+            self.ax.set_title(
+                f"ptcl={self.N_particle} f={self.slope} Lambda={self.Lambda}", fontsize=20)
+
             self.ax.text(
                 0.99, 0.99, f"iter = {self.interval * (i+1)}",
                 verticalalignment="top", horizontalalignment='right',
@@ -288,7 +291,7 @@ class AOUP:
         ani = animation.FuncAnimation(
             fig=self.fig, func=animate_histogram, frames=frames, interval=0, blit=False)
 
-        ani.save(f"animation/histogram ptcl={self.N_particle} iter={frames * self.interval}.mp4", fps=30,
+        ani.save(f"animation/ptcl={self.N_particle} iter={frames * self.interval} f={self.slope} Lambda={self.Lambda}.mp4", fps=30,
                  extra_args=['-vcodec', 'libx264'])
 
     def phase_space(self, frames: int = 1000, fps: int = 100) -> None:
