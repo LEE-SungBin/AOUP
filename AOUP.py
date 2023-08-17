@@ -359,7 +359,7 @@ if __name__ == '__main__':
     parser.add_argument("-mode", "--mode", type=str,
                         default="manual", choices=["manual", "velocity", "Lambda", "slope"])
     parser.add_argument("-v", "--velocity", type=float, default=1.0)
-    parser.add_argument("-d", "--Lambda", type=float, default=0.1)
+    parser.add_argument("-d", "--Lambda", type=float, default=1.0)
     parser.add_argument("-f", "--slope", type=float, default=1.0)
     parser.add_argument("-max_v", "--max_velocity", type=float, default=10.0)
     parser.add_argument("-N_v", "--N_velocity", type=int, default=9)
@@ -371,12 +371,12 @@ if __name__ == '__main__':
     parser.add_argument("-bin", "--N_bins", type=int, default=40)
     parser.add_argument("-g", "--gamma", type=float, default=1.0)
     parser.add_argument("-T", "--temperature", type=float, default=1.0)
-    parser.add_argument("-tau", "--tau", type=float, default=5.0)
-    parser.add_argument("-Da", "--Da", type=float, default=5.0)
+    parser.add_argument("-tau", "--tau", type=float, default=1.0)
+    parser.add_argument("-Da", "--Da", type=float, default=1.0)
     parser.add_argument("-dt", "--delta_t", type=float, default=0.001)
     parser.add_argument("-init", "--initial", type=int, default=10000)
     parser.add_argument("-sam", "--sampling", type=int, default=100)
-    parser.add_argument("-int", "--interval", type=int, default=1)
+    parser.add_argument("-unit", "--interval", type=int, default=1)
 
     args = parser.parse_args()
 
