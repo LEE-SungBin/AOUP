@@ -215,11 +215,11 @@ def delete_result(
         target_setting = location / f"setting/{key}.json"
         target_file = location / f"data/{key}.pkl"
 
-        try:
-            target_setting.unlink()
-            del_setting += 1
-        except OSError:
-            print(f"No setting found for key in setting: {key}")
+        # try:
+        #     target_setting.unlink()
+        #     del_setting += 1
+        # except OSError:
+        #     print(f"No setting found for key in setting: {key}")
 
         try:
             target_file.unlink()
