@@ -157,7 +157,7 @@ def get_drag_by_velocity(
                 assert np.abs(
                     drag * N_ensemble) >= 1.0, f"drag greater or equal to 1 expected, got: {np.abs(drag * N_ensemble)}"
 
-                drags[i, j] = drag / sampling
+                drags[i, j] = drag * N_ensemble
 
     return drags.transpose()
 
@@ -184,7 +184,7 @@ def get_std_by_velocity(
             if len(std) == 0:
                 continue
             else:
-                stds[i, j] = std / sampling
+                stds[i, j] = std * N_ensemble
 
     return stds.transpose()
 
