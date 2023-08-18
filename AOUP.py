@@ -293,6 +293,52 @@ class AOUP:
 
         ani.save(f"animation/ptcl={self.N_particle} iter={frames * self.interval} f={self.slope} Lambda={self.Lambda}.mp4", fps=30,
                  extra_args=['-vcodec', 'libx264'])
+    
+    def average_distribution(self, frames: int) -> None:
+        self.fig, self.ax = plt.subplots(tight_layout=True)
+
+        position_list: list = []
+        drag = 0
+
+        for _ in range(frames):
+            position_list.extend(self.position.reshape(-1))
+            drag += self.get_drag().sum()
+            self.time_evolution()
+        
+        max = self.N_particle * self.N_ensemble * frames
+
+        self.ax.hist(np.array(position_list), bins=self.N_bins)
+        self.ax.axvline(-self.Lambda/2, linestyle="--", color="k")
+        self.ax.axvline(0.0, linestyle="--", color="k")
+        self.ax.axvline(self.Lambda/2, linestyle="--", color="k")
+        self.ax.axhline(max / self.N_bins, linestyle="--", color="k")
+
+        lx = np.linspace(-self.Lambda/2, 0, 10)
+        rx = np.linspace(0, self.Lambda/2, 10)
+
+        def f(x: npt.NDArray):
+            return max/self.N_bins * (1 + x / (self.Lambda / 2))
+
+        def g(x: npt.NDArray):
+            return max/self.N_bins * (1 - x / (self.Lambda / 2))
+
+        self.ax.plot(lx, f(lx), color="b")
+        self.ax.plot(rx, g(rx), color="r")
+
+        self.ax.set_xlim(left=-self.boundary/2, right=self.boundary/2)
+        self.ax.set_ylim(bottom=0.0, top=max/self.N_bins*1.5)
+
+        self.ax.set_title(
+            f"ptcl={self.N_particle} ens={self.N_ensemble} f={self.slope} Lambda={self.Lambda} v={self.velocity}", fontsize=15)
+
+        self.ax.text(
+                0.99, 0.91, f"drag = {drag}",
+                verticalalignment="top", horizontalalignment='right',
+                transform=self.ax.transAxes,
+                color='black', fontsize=20
+            )
+        
+        self.fig.savefig(f"fig/distribution ptcl={self.N_particle} ens={self.N_ensemble} f={self.slope} Lambda={self.Lambda} v={self.velocity}.jpg")
 
     def phase_space(self, frames: int = 1000, fps: int = 100) -> None:
         self.fig, self.ax = plt.subplots(tight_layout=True)
