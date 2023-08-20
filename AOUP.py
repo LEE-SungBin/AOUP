@@ -293,7 +293,7 @@ class AOUP:
 
         ani.save(f"animation/ptcl={self.N_particle} iter={frames * self.interval} f={self.slope} Lambda={self.Lambda}.mp4", fps=30,
                  extra_args=['-vcodec', 'libx264'])
-    
+
     def average_distribution(self, frames: int) -> None:
         self.fig, self.ax = plt.subplots(tight_layout=True)
 
@@ -303,8 +303,9 @@ class AOUP:
         for _ in range(frames):
             position_list.extend(self.position.reshape(-1))
             drag += self.get_drag().sum()
-            self.time_evolution()
-        
+            for _ in range(self.interval):
+                self.time_evolution()
+
         max = self.N_particle * self.N_ensemble * frames
 
         self.ax.hist(np.array(position_list), bins=self.N_bins)
@@ -332,13 +333,14 @@ class AOUP:
             f"ptcl={self.N_particle} ens={self.N_ensemble} f={self.slope} Lambda={self.Lambda} v={self.velocity}", fontsize=15)
 
         self.ax.text(
-                0.99, 0.91, f"drag = {drag}",
-                verticalalignment="top", horizontalalignment='right',
-                transform=self.ax.transAxes,
-                color='black', fontsize=20
-            )
-        
-        self.fig.savefig(f"fig/distribution ptcl={self.N_particle} ens={self.N_ensemble} f={self.slope} Lambda={self.Lambda} v={self.velocity}.jpg")
+            0.99, 0.91, f"drag = {drag}",
+            verticalalignment="top", horizontalalignment='right',
+            transform=self.ax.transAxes,
+            color='black', fontsize=20
+        )
+
+        self.fig.savefig(
+            f"fig/distribution ptcl={self.N_particle} ens={self.N_ensemble} f={self.slope} Lambda={self.Lambda} v={self.velocity}.jpg")
 
     def phase_space(self, frames: int = 1000, fps: int = 100) -> None:
         self.fig, self.ax = plt.subplots(tight_layout=True)
@@ -397,6 +399,19 @@ def get_logspace(
     return np.array(logspace)[::-1]
 
 
+def get_linspace(
+    max_value: float,
+    num: int,
+) -> npt.NDArray:
+
+    linspace: list[float] = []
+
+    for i in range(num):
+        linspace.append(max_value/num*(i+1))
+
+    return np.array(linspace)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
@@ -413,7 +428,7 @@ if __name__ == '__main__':
     parser.add_argument("-N_d", "--N_Lambda", type=int, default=7)
     parser.add_argument("-max_f", "--max_slope", type=float, default=1.0)
     parser.add_argument("-N_f", "--N_slope", type=int, default=7)
-    parser.add_argument("-L", "--boundary", type=float, default=10.0)
+    parser.add_argument("-L", "--boundary", type=float, default=5.0)
     parser.add_argument("-bin", "--N_bins", type=int, default=40)
     parser.add_argument("-g", "--gamma", type=float, default=1.0)
     parser.add_argument("-T", "--temperature", type=float, default=1.0)
@@ -449,7 +464,10 @@ if __name__ == '__main__':
         aoup.run_AOUP()
 
     elif args.mode == "velocity":
-        velocities = get_logspace(
+        # velocities = get_logspace(
+        #     max_value=args.max_velocity, num=args.N_velocity)
+
+        velocities = get_linspace(
             max_value=args.max_velocity, num=args.N_velocity)
 
         for velocity in velocities:
