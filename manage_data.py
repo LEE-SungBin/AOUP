@@ -154,10 +154,10 @@ def get_drag_by_velocity(
             if len(drag) == 0:
                 continue
             else:
-                assert np.abs(
-                    drag * N_ensemble) >= 1.0, f"drag greater or equal to 1 expected, got: {np.abs(drag * N_ensemble)}"
+                assert (np.abs(
+                    drag * N_ensemble) >= 1.0).all(), f"drag greater or equal to 1 expected, got: {np.abs(drag * N_ensemble)}"
 
-                drags[i, j] = drag * N_ensemble
+                drags[i, j] = (drag * N_ensemble).mean()
 
     return drags
 
@@ -184,7 +184,7 @@ def get_std_by_velocity(
             if len(std) == 0:
                 continue
             else:
-                stds[i, j] = std * N_ensemble
+                stds[i, j] = (std * N_ensemble).mean()
 
     return stds
 
