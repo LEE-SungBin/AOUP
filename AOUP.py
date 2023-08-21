@@ -248,6 +248,8 @@ class AOUP:
             for _ in range(self.interval):
                 self.time_evolution()
 
+            max = self.N_particle
+
             self.ax.cla()
             self.ax.hist(self.position[0], bins=self.bins)
             self.ax.axvline(-self.Lambda/2, linestyle="--", color="k")
@@ -260,16 +262,16 @@ class AOUP:
             rx = np.linspace(0, self.Lambda/2, 10)
 
             def f(x: npt.NDArray):
-                return self.N_particle/self.N_bins * (1 + x / (self.Lambda / 2))
+                return max/self.N_bins * (1 + x / (self.Lambda / 2))
 
             def g(x: npt.NDArray):
-                return self.N_particle/self.N_bins * (1 - x / (self.Lambda / 2))
+                return max/self.N_bins * (1 - x / (self.Lambda / 2))
 
             self.ax.plot(lx, f(lx), color="b")
             self.ax.plot(rx, g(rx), color="r")
 
             self.ax.set_xlim(left=-self.boundary/2, right=self.boundary/2)
-            self.ax.set_ylim(bottom=0.0, top=self.N_particle/self.N_bins*1.5)
+            self.ax.set_ylim(bottom=0.0, top=max/self.N_bins*1.5)
 
             self.ax.set_title(
                 f"ptcl={self.N_particle} f={self.slope} Lambda={self.Lambda}", fontsize=20)

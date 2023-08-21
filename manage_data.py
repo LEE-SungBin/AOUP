@@ -159,7 +159,7 @@ def get_drag_by_velocity(
 
                 drags[i, j] = drag * N_ensemble
 
-    return drags.transpose()
+    return drags
 
 
 def get_std_by_velocity(
@@ -186,7 +186,7 @@ def get_std_by_velocity(
             else:
                 stds[i, j] = std * N_ensemble
 
-    return stds.transpose()
+    return stds
 
 
 def get_log_scale(
