@@ -36,6 +36,8 @@ def get_conditions(
     delta_t: float | None = None,
     initial: int | None = None,
     sampling: int | None = None,
+    interval: int | None = None,
+    potential: str | None = None,
 ) -> list[str]:
 
     conditions: list[str] = []
@@ -68,6 +70,10 @@ def get_conditions(
         conditions.append(f"initial == {initial}")
     if sampling is not None:
         conditions.append(f"sampling == {sampling}")
+    if interval is not None:
+        conditions.append(f"interval == {interval}")
+    if potential is not None:
+        conditions.append(f"potential == {potential}")
 
     return conditions
 
@@ -155,7 +161,7 @@ def get_drag_by_velocity(
                 continue
             else:
                 assert (np.abs(
-                    drag * N_ensemble) >= 1.0).all(), f"drag greater or equal to 1 expected, got: {np.abs(drag * N_ensemble)}"
+                    drag * N_ensemble) >= 1.0).all(), f"drag greater or equal to 1, got: {np.abs(drag * N_ensemble)}"
 
                 drags[i, j] = (drag * N_ensemble).mean()
 
