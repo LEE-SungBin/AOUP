@@ -34,10 +34,10 @@ class Parameter:
     initial: int
     sampling: int
     interval: int
-    potential: str
+    potential: int
 
     def __post__init__(self) -> None:
-        assert self.potential == "linear" or "quartic", f"mode must be linear or quartic"
+        assert self.potential >= 1, f"potential must be greater of equal to 1, potential = {self.potential}"
 
     def to_log(self) -> str:
         return ", ".join(
@@ -84,6 +84,7 @@ class AOUP:
         self.initial = self.parameter.initial
         self.sampling = self.parameter.sampling  # * number of iter to collect samples
         self.interval = self.parameter.interval  # * iteration interval of collection
+        # * order of external potential, linear, qudratic, cubic, quartic, etc.
         self.potential = self.parameter.potential
 
     def reset(self) -> None:  # * initialize position and noise
@@ -132,7 +133,7 @@ class AOUP:
             self.N_ensemble, ), f"drag.shape {drag.shape} != ({self.N_ensemble}, )"
 
         key = hashlib.sha1(str(self.parameter).encode()).hexdigest()[:6]
-        data_dir, setting_dir = Path("data"), Path("setting")
+        data_dir, setting_dir = Path(f"data"), Path(f"setting")
         data_dir.mkdir(parents=True, exist_ok=True)
         setting_dir.mkdir(parents=True, exist_ok=True)
         filename = key
@@ -162,8 +163,6 @@ class AOUP:
             file.write(
                 f"{datetime.now().replace(microsecond=0)} | {self.parameter.to_log()} | drag={np.round(np.mean(drag),5)}, std={np.round(np.std(drag)/np.sqrt(self.N_ensemble),5)} | {self.Time.to_log()}\n"
             )
-
-        self.reset()
 
     # * time evolution of AOUP
     def time_evolution(self) -> None:
@@ -201,14 +200,11 @@ class AOUP:
 
         force = np.zeros(shape=(self.N_ensemble, self.N_particle))
 
-        if self.potential == "linear":
-            force[self.positive] = -1 * -self.slope
-            force[self.negative] = -1 * self.slope
+        force[self.positive] = np.abs(self.potential * self.slope * (
+            2 * self.position[self.positive] / self.Lambda)**(self.potential-1))
 
-        elif self.potential == "quartic":
-            force[
-                self.positive | self.negative] = -1 * (
-                -4 * self.slope * (2*self.position[self.positive | self.negative]/self.Lambda)**3)
+        force[self.negative] = -1 * np.abs(self.potential * self.slope * (
+            2 * self.position[self.negative] / self.Lambda)**(self.potential-1))
 
         self.Time.force_update += time.perf_counter() - now
 
@@ -245,7 +241,7 @@ class AOUP:
 
         self.Time.periodic_update += time.perf_counter() - now
 
-    def histogram(self, frames: int = 100, fps: int = 30) -> None:  # * animate histogram
+    def histogram(self, frames: int = 100, fps: int = 10) -> None:  # * animate histogram
         self.reset()
         self.fig, self.ax = plt.subplots(tight_layout=True)
         self.bins = np.linspace(-self.boundary/2,
@@ -257,7 +253,7 @@ class AOUP:
         self.ax.set_ylim(bottom=0.0, top=max/self.N_bins*1.5)
 
         def animate_histogram(i: int) -> None:  # * update animation
-            print(i, end=" ")
+            # print(i, end=" ")
             for _ in range(self.interval):
                 self.time_evolution()
 
@@ -307,8 +303,8 @@ class AOUP:
         Path(
             f"animation/{self.potential}/histogram").mkdir(parents=True, exist_ok=True)
 
-        ani.save(f"animation/{self.potential}/histogram/ptcl={self.N_particle} ens={self.N_ensemble} pot={self.potential} f={self.slope} d={self.Lambda} v={self.velocity}.mp4",
-                 fps=fps, extra_args=['-vcodec', 'libx264'])
+        ani.save(f"animation/{self.potential}/histogram/ptcl={self.N_particle} ens={self.N_ensemble} pot={self.potential} f={self.slope} d={self.Lambda} v={self.velocity}.gif",
+                 fps=fps)  # , extra_args=['-vcodec', 'libx264'])
 
     def average_distribution(self, frames: int = 100) -> None:
         self.reset()
@@ -321,7 +317,7 @@ class AOUP:
             self.time_evolution()
 
         for i in range(frames):
-            print(i, end=" ")
+            # print(i, end=" ")
             position_list.extend(self.position.reshape(-1))
             drag += self.get_drag().sum()
             for _ in range(self.interval):
@@ -366,7 +362,7 @@ class AOUP:
         self.fig.savefig(
             f"fig/{self.potential}/distribution/ptcl={self.N_particle} ens={self.N_ensemble} pot={self.potential} f={self.slope} d={self.Lambda} v={self.velocity}.jpg")
 
-    def phase_space(self, frames: int = 100, fps: int = 30) -> None:
+    def phase_space(self, frames: int = 100, fps: int = 10) -> None:
         self.reset()
         self.fig, self.ax = plt.subplots(tight_layout=True)
         self.ax.set_xlim([-self.boundary/2, self.boundary/2])
@@ -379,7 +375,7 @@ class AOUP:
             self.time_evolution()
 
         def animate_phase_space(i: int):
-            print(i, end=" ")
+            # print(i, end=" ")
             for _ in range(self.interval):
                 self.time_evolution()
 
@@ -469,8 +465,7 @@ if __name__ == '__main__':
     parser.add_argument("-init", "--initial", type=int, default=10000)
     parser.add_argument("-sam", "--sampling", type=int, default=100)
     parser.add_argument("-unit", "--interval", type=int, default=500)
-    parser.add_argument("-pot", "--potential", type=str,
-                        default="quartic", choices=["linear", "quartic"])
+    parser.add_argument("-pot", "--potential", type=int, default=4)
 
     args = parser.parse_args()
 
@@ -496,7 +491,7 @@ if __name__ == '__main__':
 
         aoup = AOUP(parameter)
         aoup.average_distribution(frames=100)
-        aoup.histogram(frames=100, fps=30)
+        aoup.histogram(frames=100, fps=10)
         aoup.run_AOUP()
 
     elif args.mode == "velocity":
@@ -530,7 +525,7 @@ if __name__ == '__main__':
 
             aoup = AOUP(parameter)
             aoup.average_distribution(frames=100)
-            aoup.histogram(frames=100, fps=30)
+            aoup.histogram(frames=100, fps=10)
             aoup.run_AOUP()
 
     elif args.mode == "Lambda":
@@ -561,7 +556,7 @@ if __name__ == '__main__':
 
             aoup = AOUP(parameter)
             aoup.average_distribution(frames=100)
-            aoup.histogram(frames=100, fps=30)
+            aoup.histogram(frames=100, fps=10)
             aoup.run_AOUP()
 
     elif args.mode == "slope":
@@ -592,7 +587,7 @@ if __name__ == '__main__':
 
             aoup = AOUP(parameter)
             aoup.average_distribution(frames=100)
-            aoup.histogram(frames=100, fps=30)
+            aoup.histogram(frames=100, fps=10)
             aoup.run_AOUP()
 
     else:

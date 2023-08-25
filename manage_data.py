@@ -37,7 +37,7 @@ def get_conditions(
     initial: int | None = None,
     sampling: int | None = None,
     interval: int | None = None,
-    potential: str | None = None,
+    potential: int | None = None,
 ) -> list[str]:
 
     conditions: list[str] = []
