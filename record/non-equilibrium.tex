@@ -1,0 +1,132 @@
+%\documentclass[12pt]{article}
+\documentclass[12pt]{scrartcl}
+\title{Research Record (Non-equilibrium Physics)}
+\nonstopmode
+%\usepackage[utf-8]{inputenc}
+\usepackage{graphicx} % Required for including pictures
+\usepackage{array}
+\usepackage[figurename=Figure]{caption}
+\usepackage{float}    % For tables and other floats
+\usepackage{verbatim} % For comments and other
+\usepackage{amsmath}  % For math
+\usepackage{amssymb}  % For more math
+\usepackage{braket}   % Bracket
+\usepackage{fullpage} % Set margins and place page numbers at bottom center
+\usepackage{paralist} % paragraph spacing
+\usepackage{listings} % For source code
+\usepackage{subfig}   % For subfigures
+%\usepackage{physics}  % for simplified dv, and 
+\usepackage{enumitem} % useful for itemization
+\usepackage{siunitx}  % standardization of si units
+\usepackage{mathtools}
+\usepackage{tikz,bm} % Useful for drawing plots
+%\usepackage{tikz-3dplot}
+\usepackage{circuitikz}
+\usepackage{color}
+\usepackage{kotex} % korean
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+	linktoc=all, 
+    citecolor=black,
+    filecolor=black,
+    linkcolor=black,
+    urlcolor=black
+}
+\DeclareMathOperator{\Tr}{Tr}
+\newcommand*{\permcomb}[4][0mu]{{{}_{#3}\mkern#1#2_{#4}}}
+\newcommand*{\perm}[1][-3mu]{\permcomb[#1]{P}}
+\newcommand*{\comb}[1][-1mu]{\permcomb[#1]{C}}
+
+%%% Colours used in field vectors and propagation direction
+\definecolor{mycolor}{rgb}{1,0.2,0.3}
+\definecolor{brightgreen}{rgb}{0.4, 1.0, 0.0}
+\definecolor{britishracinggreen}{rgb}{0.0, 0.26, 0.15}
+\definecolor{cadmiumgreen}{rgb}{0.0, 0.42, 0.24}
+\definecolor{ceruleanblue}{rgb}{0.16, 0.32, 0.75}
+\definecolor{darkelectricblue}{rgb}{0.33, 0.41, 0.47}
+\definecolor{darkpowderblue}{rgb}{0.0, 0.2, 0.6}
+\definecolor{darktangerine}{rgb}{1.0, 0.66, 0.07}
+\definecolor{emerald}{rgb}{0.31, 0.78, 0.47}
+\definecolor{palatinatepurple}{rgb}{0.41, 0.16, 0.38}
+\definecolor{pastelviolet}{rgb}{0.8, 0.6, 0.79}
+
+\numberwithin{equation}{subsubsection}
+
+\begin{document}
+
+\begin{center}
+	\hrule
+	\vspace{.4cm}
+	{\textbf { \large Research Record (Non-equilibrium Physics)}}
+\end{center}
+\hspace*{\fill} \textbf{SungBin LEE (이성빈 $|$ 李誠彬)} \\
+\hspace*{\fill} Undergraduate Student   \\
+\hspace*{\fill} Dept. of Physics and Astronomy   \\
+\hspace*{\fill} Seoul National University \\
+\hrule
+
+\tableofcontents % Output the table of contents (all sections on one slide)
+
+\newpage
+\section{Fall 2023 (4$^{\mathrm{th}}$ Semester)} %\hfill \newline
+
+\subsection{August 2023}
+
+\subsubsection{August 26th (Sat), 2023}
+\begin{enumerate}
+\item After discussion with professor, we decided to search for negative drag on AOUP particles in quartic polynomial external potential,
+unlike linear potential which we have been doing so far. 
+
+\item We make this decision after referring to an article which shows that the AOUP reaches equilibrium if their 
+smooth interaction potential has zero third derivatives.\cite{Bonila2019}
+
+\item The revised external potential with n$^{\mathrm{th}}$-order polynomial is as follows
+\begin{align}
+    \begin{cases}
+        V(x) = \frac{f\Lambda}{2}\left[1-\left|\frac{2x}{\Lambda}\right|^n\right]&\text{ $|x|<\Lambda/2$}\\
+        V(x) = 0 &\text{ else}
+    \end{cases}
+\end{align}
+
+\item Running simulation under following parameters:
+\begin{center}
+    \begin{tabular}{||c|c|c|c|c|c|c|c|c|c|c|c||} 
+        \hline
+        \# ptcl & \# ens & bound & $\Gamma$ & T & $\tau$ & $D_a$ & $\delta t$ & init & sample & gap & order \\
+        \hline\hline
+        1000 & 1000 & 5.0 & 1.0 & 1.0 & 1.0 & 1.0 & 0.001 & 10,000 & 100 & 1,000 & 4\\
+        \hline
+    \end{tabular}
+\end{center}
+
+\begin{center}
+    \begin{tabular}{||c|c|c||} 
+        \hline
+        slope f & lambda $\lambda$ & velocity v \\
+        \hline\hline
+        0.1 $\sim$ 0.5 & 0.1 $\sim$ 0.5 & 0.001 $\sim$ 10.0\\
+        \hline
+    \end{tabular}
+\end{center}
+
+\item Markov process is independent of history and depends only on the current status
+
+\item The dimensionless parameter is as follows
+\begin{center}
+    \begin{tabular}{||c|c|c|c||} 
+        \hline
+        characteristic time & propulsion force & persistence length & typical velocity \\
+        \hline\hline
+        $\tau$ & $\Gamma\sqrt{\frac{D_a}{\tau}}$ & $\sqrt{D_a\cdot\tau}$ & $\sqrt{\frac{D_a}{\tau}}$ \\
+        \hline
+    \end{tabular}
+\end{center}
+
+\end{enumerate}
+
+% \nocite{*}
+\bibliographystyle{unsrt}
+\bibliography{../tex/ref.bib}
+
+\end{document}
