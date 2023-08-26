@@ -130,10 +130,10 @@ def load_result(
     df = pd.DataFrame(results)
 
     if len(conditions) == 0:
-        return df.sort_values(by=["velocity", "Lambda", "slope"], ascending=True)
+        return df.sort_values(by=["slope", "Lambda", "velocity"], ascending=True)
 
     else:
-        return df.query(" and ".join(conditions)).sort_values(by=["velocity", "Lambda", "slope"], ascending=True)
+        return df.query(" and ".join(conditions)).sort_values(by=["slope", "Lambda", "velocity"], ascending=True)
 
     # return df.sort_values(by=["Lambda", "slope"], ascending=True)
 
