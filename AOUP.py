@@ -490,8 +490,8 @@ if __name__ == '__main__':
         )
 
         aoup = AOUP(parameter)
-        aoup.average_distribution(frames=100)
-        aoup.histogram(frames=100, fps=10)
+        # aoup.average_distribution(frames=100)
+        # aoup.histogram(frames=100, fps=10)
         aoup.run_AOUP()
 
     elif args.mode == "velocity":
@@ -555,8 +555,8 @@ if __name__ == '__main__':
             # print(parameter)
 
             aoup = AOUP(parameter)
-            aoup.average_distribution(frames=100)
-            aoup.histogram(frames=100, fps=10)
+            # aoup.average_distribution(frames=100)
+            # aoup.histogram(frames=100, fps=10)
             aoup.run_AOUP()
 
     elif args.mode == "slope":
@@ -586,8 +586,8 @@ if __name__ == '__main__':
             # print(parameter)
 
             aoup = AOUP(parameter)
-            aoup.average_distribution(frames=100)
-            aoup.histogram(frames=100, fps=10)
+            # aoup.average_distribution(frames=100)
+            # aoup.histogram(frames=100, fps=10)
             aoup.run_AOUP()
 
     else:

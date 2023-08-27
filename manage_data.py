@@ -141,10 +141,15 @@ def load_result(
 def get_drag_by_velocity(
     df: pd.DataFrame,
     velocity: float,
+    available_slope: list | None = None,
+    available_Lambda: list | None = None,
 ) -> npt.NDArray:
 
-    available_slope, available_Lambda = sorted(
-        set(df["slope"].to_numpy())), sorted(set(df["Lambda"].to_numpy()))
+    if available_slope == None:
+        available_slope = sorted(set(df["slope"].to_numpy()))
+
+    if available_Lambda == None:
+        available_Lambda = sorted(set(df["Lambda"].to_numpy()))
 
     drags = np.zeros((len(available_slope), len(available_Lambda)))
 
@@ -171,10 +176,15 @@ def get_drag_by_velocity(
 def get_std_by_velocity(
     df: pd.DataFrame,
     velocity: float,
+    available_slope: list | None = None,
+    available_Lambda: list | None = None,
 ) -> npt.NDArray:
 
-    available_slope, available_Lambda = sorted(
-        set(df["slope"].to_numpy())), sorted(set(df["Lambda"].to_numpy()))
+    if available_slope == None:
+        available_slope = sorted(set(df["slope"].to_numpy()))
+
+    if available_Lambda == None:
+        available_Lambda = sorted(set(df["Lambda"].to_numpy()))
 
     stds = np.zeros((len(available_slope), len(available_Lambda)))
 
@@ -198,9 +208,12 @@ def get_std_by_velocity(
 def get_log_scale(
     df: pd.DataFrame,
     velocity: float,
+    available_slope: list | None = None,
+    available_Lambda: list | None = None,
 ) -> npt.NDArray:
 
-    drag = get_drag_by_velocity(df, velocity)
+    drag = get_drag_by_velocity(
+        df, velocity, available_slope, available_Lambda)
 
     pm_flag = drag/np.abs(drag)
     data = np.log10(np.abs(drag))
