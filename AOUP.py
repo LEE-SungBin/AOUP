@@ -464,7 +464,7 @@ if __name__ == '__main__':
     parser.add_argument("-dt", "--delta_t", type=float, default=0.001)
     parser.add_argument("-init", "--initial", type=int, default=10000)
     parser.add_argument("-sam", "--sampling", type=int, default=100)
-    parser.add_argument("-unit", "--interval", type=int, default=500)
+    parser.add_argument("-unit", "--interval", type=int, default=1000)
     parser.add_argument("-pot", "--potential", type=int, default=4)
 
     args = parser.parse_args()
@@ -498,7 +498,7 @@ if __name__ == '__main__':
         # velocities = get_logspace(
         #     max_value=args.max_velocity, num=args.N_velocity)
 
-        velocities = get_linspace(
+        velocities = get_logspace(
             max_value=args.max_velocity, num=args.N_velocity)
 
         for velocity in velocities:
@@ -524,8 +524,8 @@ if __name__ == '__main__':
             # print(parameter)
 
             aoup = AOUP(parameter)
-            aoup.average_distribution(frames=100)
-            aoup.histogram(frames=100, fps=10)
+            # aoup.average_distribution(frames=100)
+            # aoup.histogram(frames=100, fps=10)
             aoup.run_AOUP()
 
     elif args.mode == "Lambda":
