@@ -172,13 +172,12 @@ class AOUP:
         now = time.perf_counter()
         self.position += (force / self.gamma - self.velocity) * self.delta_t
         self.position += self.colored_noise * self.delta_t
-        if self.thermal_bath:
-            self.position += self.rng.normal(
-                loc=0.0,  # * mean
-                scale=np.sqrt(2 * self.temperature / \
-                              self.gamma * self.delta_t),  # * std
-                size=(self.N_ensemble, self.N_particle),
-            )
+        self.position += self.rng.normal(
+            loc=0.0,  # * mean
+            scale=np.sqrt(2 * self.temperature / \
+                          self.gamma * self.delta_t),  # * std
+            size=(self.N_ensemble, self.N_particle),
+        )
         assert self.position.shape == (
             self.N_ensemble, self.N_particle), f"position shape: {self.position.shape} != ({self.N_ensemble}, {self.N_particle})"
         self.Time.position_update += time.perf_counter() - now
@@ -202,11 +201,13 @@ class AOUP:
 
         force = np.zeros(shape=(self.N_ensemble, self.N_particle))
 
-        force[self.positive] = np.abs(self.potential * self.slope * (
-            2 * self.position[self.positive] / self.Lambda)**(self.potential-1))
+        force[self.positive] = self.potential * \
+            self.slope * (1-2*np.abs(self.position) /
+                          self.Lambda)**(self.potential-1)
 
-        force[self.negative] = -1 * np.abs(self.potential * self.slope * (
-            2 * self.position[self.negative] / self.Lambda)**(self.potential-1))
+        force[self.negative] = -1 * self.potential * \
+            self.slope * (1-2*np.abs(self.position) /
+                          self.Lambda)**(self.potential-1)
 
         self.Time.force_update += time.perf_counter() - now
 
@@ -460,7 +461,7 @@ if __name__ == '__main__':
     parser.add_argument("-L", "--boundary", type=float, default=5.0)
     parser.add_argument("-bin", "--N_bins", type=int, default=40)
     parser.add_argument("-g", "--gamma", type=float, default=1.0)
-    parser.add_argument("-T", "--temperature", type=float, default=1.0)
+    parser.add_argument("-T", "--temperature", type=float, default=0.001)
     parser.add_argument("-tau", "--tau", type=float, default=1.0)
     parser.add_argument("-Da", "--Da", type=float, default=1.0)
     parser.add_argument("-dt", "--delta_t", type=float, default=0.001)
@@ -468,8 +469,6 @@ if __name__ == '__main__':
     parser.add_argument("-sam", "--sampling", type=int, default=100)
     parser.add_argument("-unit", "--interval", type=int, default=1000)
     parser.add_argument("-pot", "--potential", type=int, default=4)
-    parser.add_argument("-bath", "--thermal_bath", type=bool,
-                        default=False, choices=[True, False])
 
     args = parser.parse_args()
 
