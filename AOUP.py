@@ -62,10 +62,9 @@ class Time:
 
 
 class AOUP:
-    def __init__(self, parameter: Parameter, thermal_bath: bool = False):
+    def __init__(self, parameter: Parameter):
         self.parameter = parameter
         self.set_coeff()
-        self.thermal_bath = thermal_bath
 
     def set_coeff(self) -> None:
         self.N_particle = self.parameter.N_particle  # * number of AOUPs
@@ -106,7 +105,7 @@ class AOUP:
         self.update_positive_negative()
 
         self.colored_noise = self.rng.normal(
-            loc=0.0, scale=5.0, size=(self.N_ensemble, self.N_particle)
+            loc=0.0, scale=1.0, size=(self.N_ensemble, self.N_particle)
         )
 
     def run_AOUP(self) -> None:  # * get average and std of drag
@@ -202,11 +201,11 @@ class AOUP:
         force = np.zeros(shape=(self.N_ensemble, self.N_particle))
 
         force[self.positive] = self.potential * \
-            self.slope * (1-2*np.abs(self.position) /
+            self.slope * (1-2*np.abs(self.position[self.positive]) /
                           self.Lambda)**(self.potential-1)
 
         force[self.negative] = -1 * self.potential * \
-            self.slope * (1-2*np.abs(self.position) /
+            self.slope * (1-2*np.abs(self.position[self.negative]) /
                           self.Lambda)**(self.potential-1)
 
         self.Time.force_update += time.perf_counter() - now
@@ -244,7 +243,8 @@ class AOUP:
 
         self.Time.periodic_update += time.perf_counter() - now
 
-    def histogram(self, frames: int = 100, fps: int = 10) -> None:  # * animate histogram
+    # * animate histogram
+    def histogram_animation(self, frames: int = 100, fps: int = 10) -> None:
         self.reset()
         self.fig, self.ax = plt.subplots(tight_layout=True)
         self.bins = np.linspace(-self.boundary/2,
@@ -492,7 +492,7 @@ if __name__ == '__main__':
             potential=args.potential,
         )
 
-        aoup = AOUP(parameter, args.thermal_bath)
+        aoup = AOUP(parameter)
         # aoup.average_distribution(frames=100)
         # aoup.histogram(frames=100, fps=10)
         aoup.run_AOUP()
@@ -526,7 +526,7 @@ if __name__ == '__main__':
 
             # print(parameter)
 
-            aoup = AOUP(parameter, args.thermal_bath)
+            aoup = AOUP(parameter)
             # aoup.average_distribution(frames=100)
             # aoup.histogram(frames=100, fps=10)
             aoup.run_AOUP()
@@ -557,7 +557,7 @@ if __name__ == '__main__':
 
             # print(parameter)
 
-            aoup = AOUP(parameter, args.thermal_bath)
+            aoup = AOUP(parameter)
             # aoup.average_distribution(frames=100)
             # aoup.histogram(frames=100, fps=10)
             aoup.run_AOUP()
@@ -588,7 +588,7 @@ if __name__ == '__main__':
 
             # print(parameter)
 
-            aoup = AOUP(parameter, args.thermal_bath)
+            aoup = AOUP(parameter)
             # aoup.average_distribution(frames=100)
             # aoup.histogram(frames=100, fps=10)
             aoup.run_AOUP()
