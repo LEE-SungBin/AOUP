@@ -62,9 +62,10 @@ class Time:
 
 
 class AOUP:
-    def __init__(self, parameter: Parameter):
+    def __init__(self, parameter: Parameter, thermal_bath: bool = False):
         self.parameter = parameter
         self.set_coeff()
+        self.thermal_bath = thermal_bath
 
     def set_coeff(self) -> None:
         self.N_particle = self.parameter.N_particle  # * number of AOUPs
@@ -105,7 +106,7 @@ class AOUP:
         self.update_positive_negative()
 
         self.colored_noise = self.rng.normal(
-            loc=0.0, scale=1.0, size=(self.N_ensemble, self.N_particle)
+            loc=0.0, scale=5.0, size=(self.N_ensemble, self.N_particle)
         )
 
     def run_AOUP(self) -> None:  # * get average and std of drag
@@ -171,12 +172,13 @@ class AOUP:
         now = time.perf_counter()
         self.position += (force / self.gamma - self.velocity) * self.delta_t
         self.position += self.colored_noise * self.delta_t
-        self.position += self.rng.normal(
-            loc=0.0,  # * mean
-            scale=np.sqrt(2 * self.temperature / \
-                          self.gamma * self.delta_t),  # * std
-            size=(self.N_ensemble, self.N_particle),
-        )
+        if self.thermal_bath:
+            self.position += self.rng.normal(
+                loc=0.0,  # * mean
+                scale=np.sqrt(2 * self.temperature / \
+                              self.gamma * self.delta_t),  # * std
+                size=(self.N_ensemble, self.N_particle),
+            )
         assert self.position.shape == (
             self.N_ensemble, self.N_particle), f"position shape: {self.position.shape} != ({self.N_ensemble}, {self.N_particle})"
         self.Time.position_update += time.perf_counter() - now
@@ -466,6 +468,8 @@ if __name__ == '__main__':
     parser.add_argument("-sam", "--sampling", type=int, default=100)
     parser.add_argument("-unit", "--interval", type=int, default=1000)
     parser.add_argument("-pot", "--potential", type=int, default=4)
+    parser.add_argument("-bath", "--thermal_bath", type=bool,
+                        default=False, choices=[True, False])
 
     args = parser.parse_args()
 
@@ -489,7 +493,7 @@ if __name__ == '__main__':
             potential=args.potential,
         )
 
-        aoup = AOUP(parameter)
+        aoup = AOUP(parameter, args.thermal_bath)
         # aoup.average_distribution(frames=100)
         # aoup.histogram(frames=100, fps=10)
         aoup.run_AOUP()
@@ -523,7 +527,7 @@ if __name__ == '__main__':
 
             # print(parameter)
 
-            aoup = AOUP(parameter)
+            aoup = AOUP(parameter, args.thermal_bath)
             # aoup.average_distribution(frames=100)
             # aoup.histogram(frames=100, fps=10)
             aoup.run_AOUP()
@@ -554,7 +558,7 @@ if __name__ == '__main__':
 
             # print(parameter)
 
-            aoup = AOUP(parameter)
+            aoup = AOUP(parameter, args.thermal_bath)
             # aoup.average_distribution(frames=100)
             # aoup.histogram(frames=100, fps=10)
             aoup.run_AOUP()
@@ -585,7 +589,7 @@ if __name__ == '__main__':
 
             # print(parameter)
 
-            aoup = AOUP(parameter)
+            aoup = AOUP(parameter, args.thermal_bath)
             # aoup.average_distribution(frames=100)
             # aoup.histogram(frames=100, fps=10)
             aoup.run_AOUP()
