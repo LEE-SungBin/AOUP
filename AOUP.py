@@ -105,7 +105,7 @@ class AOUP:
         self.update_positive_negative()
 
         self.colored_noise = self.rng.normal(
-            loc=0.0, scale=1.0, size=(self.N_ensemble, self.N_particle)
+            loc=0.0, scale=5.0, size=(self.N_ensemble, self.N_particle)
         )
 
     def run_AOUP(self) -> None:  # * get average and std of drag
