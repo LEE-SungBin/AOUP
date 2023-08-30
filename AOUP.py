@@ -6,7 +6,7 @@ from dataclasses import dataclass, field, asdict
 from datetime import datetime
 import pandas as pd
 from pathlib import Path
-# * Self only available from python 3.11, please update python
+# * from typing import Self only available from python 3.11
 from typing import Self
 from typing import Any
 import hashlib
@@ -34,10 +34,10 @@ class Parameter:
     initial: int
     sampling: int
     interval: int
-    potential: int
+    degree: int
 
     def __post__init__(self) -> None:
-        assert self.potential >= 1, f"potential must be greater of equal to 1, potential = {self.potential}"
+        assert self.degree >= 1, f"order must be greater of equal to 1, order = {self.degree}"
 
     def to_log(self) -> str:
         return ", ".join(
@@ -84,8 +84,8 @@ class AOUP:
         self.initial = self.parameter.initial
         self.sampling = self.parameter.sampling  # * number of iter to collect samples
         self.interval = self.parameter.interval  # * iteration interval of collection
-        # * order of external potential, linear, qudratic, cubic, quartic, etc.
-        self.potential = self.parameter.potential
+        # * degree of external potential, 1, 2, 3, ...
+        self.degree = self.parameter.degree
 
     def reset(self) -> None:  # * initialize position and noise
         self.Time = Time(
@@ -168,6 +168,12 @@ class AOUP:
     def time_evolution(self) -> None:
         force = self.get_force()
 
+        # print(f"force: {force}")
+        # print(f"position: {self.position}")
+        # print(f"positive: {self.positive}")
+        # print(f"negative: {self.negative}")
+        # print(f"colored noise: {self.colored_noise}")
+
         now = time.perf_counter()
         self.position += (force / self.gamma - self.velocity) * self.delta_t
         self.position += self.colored_noise * self.delta_t
@@ -200,13 +206,13 @@ class AOUP:
 
         force = np.zeros(shape=(self.N_ensemble, self.N_particle))
 
-        force[self.positive] = self.potential * \
+        force[self.positive] = self.degree * \
             self.slope * (1-2*np.abs(self.position[self.positive]) /
-                          self.Lambda)**(self.potential-1)
+                          self.Lambda)**(self.degree-1)
 
-        force[self.negative] = -1 * self.potential * \
+        force[self.negative] = -1 * self.degree * \
             self.slope * (1-2*np.abs(self.position[self.negative]) /
-                          self.Lambda)**(self.potential-1)
+                          self.Lambda)**(self.degree-1)
 
         self.Time.force_update += time.perf_counter() - now
 
@@ -215,6 +221,7 @@ class AOUP:
     def get_drag(self) -> npt.NDArray:  # * calculate drag force
         now = time.perf_counter()
 
+        # * positive_drag : [self.N_ensemble, self.N_particle]
         positive_drag = self.positive.astype(np.int64).sum(axis=1)
         negative_drag = self.negative.astype(np.int64).sum(axis=1)
 
@@ -244,7 +251,7 @@ class AOUP:
         self.Time.periodic_update += time.perf_counter() - now
 
     # * animate histogram
-    def histogram_animation(self, frames: int = 100, fps: int = 10) -> None:
+    def animate_histogram(self, frames: int = 100, fps: int = 10) -> None:
         self.reset()
         self.fig, self.ax = plt.subplots(tight_layout=True)
         self.bins = np.linspace(-self.boundary/2,
@@ -268,23 +275,20 @@ class AOUP:
             self.ax.axhline(max / self.N_bins,
                             linestyle="--", color="k")
 
-            lx = np.linspace(-self.Lambda/2, 0, 10)
-            rx = np.linspace(0, self.Lambda/2, 10)
+            lx = np.linspace(-self.Lambda/2, 0, 100)
+            rx = np.linspace(0, self.Lambda/2, 100)
 
-            def f(x: npt.NDArray):
-                return max/self.N_bins * (1 + x / (self.Lambda / 2))
+            def V(x: npt.NDArray):
+                return max/self.N_bins * (1 - np.abs(2*x/self.Lambda))**self.degree
 
-            def g(x: npt.NDArray):
-                return max/self.N_bins * (1 - x / (self.Lambda / 2))
-
-            self.ax.plot(lx, f(lx), color="b")
-            self.ax.plot(rx, g(rx), color="r")
+            self.ax.plot(lx, V(lx), color="red")     # * Negative drag
+            self.ax.plot(rx, V(rx), color="blue")    # * Positive drag
 
             self.ax.set_xlim(left=-self.boundary/2, right=self.boundary/2)
             self.ax.set_ylim(bottom=0.0, top=max/self.N_bins*1.5)
 
             self.ax.set_title(
-                f" ptcl={self.N_particle} ens={self.N_ensemble} pot={self.potential} \nf={self.slope} d={self.Lambda} v={self.velocity}", fontsize=15)
+                f"distribution animation ptcl={self.N_particle} ens={self.N_ensemble} \n{self.degree}-th order f={self.slope} d={self.Lambda} v={self.velocity}", fontsize=15)
 
             self.ax.text(
                 0.99, 0.99, f"iter = {self.interval * (i+1)}",
@@ -304,9 +308,9 @@ class AOUP:
             fig=self.fig, func=animate_histogram, frames=frames, interval=0, blit=False)
 
         Path(
-            f"animation/{self.potential}/histogram").mkdir(parents=True, exist_ok=True)
+            f"animation/{self.degree}/histogram").mkdir(parents=True, exist_ok=True)
 
-        ani.save(f"animation/{self.potential}/histogram/ptcl={self.N_particle} ens={self.N_ensemble} pot={self.potential} f={self.slope} d={self.Lambda} v={self.velocity}.gif",
+        ani.save(f"animation/{self.degree}/histogram/ptcl={self.N_particle} ens={self.N_ensemble} deg={self.degree} f={self.slope} d={self.Lambda} v={self.velocity}.gif",
                  fps=fps)  # , extra_args=['-vcodec', 'libx264'])
 
     def average_distribution(self, frames: int = 100) -> None:
@@ -337,20 +341,17 @@ class AOUP:
         lx = np.linspace(-self.Lambda/2, 0, 10)
         rx = np.linspace(0, self.Lambda/2, 10)
 
-        def f(x: npt.NDArray):
-            return max/self.N_bins * (1 + x / (self.Lambda / 2))
+        def V(x: npt.NDArray):
+            return max/self.N_bins * (1 - np.abs(2*x/self.Lambda))**self.degree
 
-        def g(x: npt.NDArray):
-            return max/self.N_bins * (1 - x / (self.Lambda / 2))
-
-        self.ax.plot(lx, f(lx), color="b")
-        self.ax.plot(rx, g(rx), color="r")
+        self.ax.plot(lx, V(lx), color="red")     # * Negative drag
+        self.ax.plot(rx, V(rx), color="blue")    # * Positive drag
 
         self.ax.set_xlim(left=-self.boundary/2, right=self.boundary/2)
         self.ax.set_ylim(bottom=0.0, top=max/self.N_bins*1.5)
 
         self.ax.set_title(
-            f" ptcl={self.N_particle} ens={self.N_ensemble} pot={self.potential} \nf={self.slope} d={self.Lambda} v={self.velocity}", fontsize=15)
+            f"distribution ptcl={self.N_particle} ens={self.N_ensemble} \n{self.degree}-th order f={self.slope} d={self.Lambda} v={self.velocity}", fontsize=15)
 
         self.ax.text(
             0.99, 0.91, f"drag = {drag}",
@@ -360,10 +361,10 @@ class AOUP:
         )
 
         Path(
-            f"fig/{self.potential}/distribution").mkdir(parents=True, exist_ok=True)
+            f"fig/{self.degree}/distribution").mkdir(parents=True, exist_ok=True)
 
         self.fig.savefig(
-            f"fig/{self.potential}/distribution/ptcl={self.N_particle} ens={self.N_ensemble} pot={self.potential} f={self.slope} d={self.Lambda} v={self.velocity}.jpg")
+            f"fig/{self.degree}/distribution/ptcl={self.N_particle} ens={self.N_ensemble} \n{self.degree}-th order f={self.slope} d={self.Lambda} v={self.velocity}.jpg")
 
     def phase_space(self, frames: int = 100, fps: int = 10) -> None:
         self.reset()
@@ -392,7 +393,7 @@ class AOUP:
             self.ax.axvline(-self.Lambda / 2, linestyle="--", color="red")
 
             self.ax.set_title(
-                f"ptcl={self.N_particle} ens={self.N_ensemble} pot={self.potential} \nf={self.slope} d={self.Lambda} v={self.velocity}", fontsize=20)
+                f"phase space ptcl={self.N_particle} ens={self.N_ensemble} \n{self.degree}th-order F={self.slope} d={self.Lambda} v={self.velocity}", fontsize=20)
             self.ax.set_xlabel("Particle position", fontsize=20)
             self.ax.set_ylabel("Colored noise", fontsize=20)
 
@@ -409,9 +410,9 @@ class AOUP:
             fig=self.fig, func=animate_phase_space, frames=frames, blit=False)
 
         Path(
-            f"animation/{self.potential}/phase_space").mkdir(parents=True, exist_ok=True)
+            f"animation/{self.degree}/phase_space").mkdir(parents=True, exist_ok=True)
 
-        ani.save(f"animation/{self.potential}/phase_space/ptcl={self.N_particle} ens={self.N_ensemble} pot={self.potential} f={self.slope} d={self.Lambda} v={self.velocity}.mp4",
+        ani.save(f"animation/{self.degree}/phase_space/ptcl={self.N_particle} ens={self.N_ensemble} \n {self.degree}th-order F={self.slope} d={self.Lambda} v={self.velocity}.mp4",
                  fps=fps, extra_args=['-vcodec', 'libx264'])
 
 
@@ -468,7 +469,7 @@ if __name__ == '__main__':
     parser.add_argument("-init", "--initial", type=int, default=10000)
     parser.add_argument("-sam", "--sampling", type=int, default=100)
     parser.add_argument("-unit", "--interval", type=int, default=1000)
-    parser.add_argument("-pot", "--potential", type=int, default=4)
+    parser.add_argument("-deg", "--degree", type=int, default=2)
 
     args = parser.parse_args()
 
@@ -489,12 +490,12 @@ if __name__ == '__main__':
             initial=args.initial,
             sampling=args.sampling,
             interval=args.interval,
-            potential=args.potential,
+            degree=args.degree,
         )
 
         aoup = AOUP(parameter)
         # aoup.average_distribution(frames=100)
-        # aoup.histogram(frames=100, fps=10)
+        # aoup.animate_histogram(frames=100, fps=10)
         aoup.run_AOUP()
 
     elif args.mode == "velocity":
@@ -521,14 +522,14 @@ if __name__ == '__main__':
                 initial=args.initial,
                 sampling=args.sampling,
                 interval=args.interval,
-                potential=args.potential,
+                degree=args.degree,
             )
 
             # print(parameter)
 
             aoup = AOUP(parameter)
             # aoup.average_distribution(frames=100)
-            # aoup.histogram(frames=100, fps=10)
+            # aoup.animate_histogram(frames=100, fps=10)
             aoup.run_AOUP()
 
     elif args.mode == "Lambda":
@@ -552,14 +553,14 @@ if __name__ == '__main__':
                 initial=args.initial,
                 sampling=args.sampling,
                 interval=args.interval,
-                potential=args.potential,
+                degree=args.degree,
             )
 
             # print(parameter)
 
             aoup = AOUP(parameter)
             # aoup.average_distribution(frames=100)
-            # aoup.histogram(frames=100, fps=10)
+            # aoup.animate_histogram(frames=100, fps=10)
             aoup.run_AOUP()
 
     elif args.mode == "slope":
@@ -583,14 +584,14 @@ if __name__ == '__main__':
                 initial=args.initial,
                 sampling=args.sampling,
                 interval=args.interval,
-                potential=args.potential,
+                degree=args.degree,
             )
 
             # print(parameter)
 
             aoup = AOUP(parameter)
             # aoup.average_distribution(frames=100)
-            # aoup.histogram(frames=100, fps=10)
+            # aoup.animate_histogram(frames=100, fps=10)
             aoup.run_AOUP()
 
     else:
