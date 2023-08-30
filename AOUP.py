@@ -259,6 +259,11 @@ class AOUP:
 
         max = self.N_particle * self.N_ensemble
         self.ax.hist(self.position.reshape(-1), bins=self.bins)
+
+        num_test = 10
+        vertical = np.linspace(
+            max / self.N_bins / (num_test + 1), max / self.N_bins / (num_test + 1) * num_test, num_test)
+        self.ax.scatter(self.position[0, :num_test], vertical, color="red")
         self.ax.set_xlim(left=-self.boundary/2, right=self.boundary/2)
         self.ax.set_ylim(bottom=0.0, top=max/self.N_bins*1.5)
 
@@ -269,6 +274,8 @@ class AOUP:
 
             self.ax.cla()
             self.ax.hist(self.position.reshape(-1), bins=self.bins)
+            self.ax.scatter(
+                self.position[0, :num_test], vertical, color="red")
             self.ax.axvline(-self.Lambda/2, linestyle="--", color="k")
             self.ax.axvline(0.0, linestyle="--", color="k")
             self.ax.axvline(self.Lambda/2, linestyle="--", color="k")
@@ -288,7 +295,7 @@ class AOUP:
             self.ax.set_ylim(bottom=0.0, top=max/self.N_bins*1.5)
 
             self.ax.set_title(
-                f"distribution animation ptcl={self.N_particle} ens={self.N_ensemble} \n{self.degree}-th order f={self.slope} d={self.Lambda} v={self.velocity}", fontsize=15)
+                f"animation ptcl={self.N_particle} ens={self.N_ensemble} T={self.temperature} tau={self.tau} Da={self.Da}\n{self.degree}-th order f={self.slope} d={self.Lambda} v={self.velocity}", fontsize=15)
 
             self.ax.text(
                 0.99, 0.99, f"iter = {self.interval * (i+1)}",
@@ -351,7 +358,7 @@ class AOUP:
         self.ax.set_ylim(bottom=0.0, top=max/self.N_bins*1.5)
 
         self.ax.set_title(
-            f"distribution ptcl={self.N_particle} ens={self.N_ensemble} \n{self.degree}-th order f={self.slope} d={self.Lambda} v={self.velocity}", fontsize=15)
+            f"distribution ptcl={self.N_particle} ens={self.N_ensemble} T={self.temperature} tau={self.tau} Da={self.Da}\n{self.degree}-th order f={self.slope} d={self.Lambda} v={self.velocity}", fontsize=15)
 
         self.ax.text(
             0.99, 0.91, f"drag = {drag}",
@@ -364,7 +371,7 @@ class AOUP:
             f"fig/{self.degree}/distribution").mkdir(parents=True, exist_ok=True)
 
         self.fig.savefig(
-            f"fig/{self.degree}/distribution/ptcl={self.N_particle} ens={self.N_ensemble} \n{self.degree}-th order f={self.slope} d={self.Lambda} v={self.velocity}.jpg")
+            f"fig/{self.degree}/distribution/ptcl={self.N_particle} ens={self.N_ensemble} {self.degree}-th order f={self.slope} d={self.Lambda} v={self.velocity}.jpg")
 
     def phase_space(self, frames: int = 100, fps: int = 10) -> None:
         self.reset()
@@ -393,7 +400,7 @@ class AOUP:
             self.ax.axvline(-self.Lambda / 2, linestyle="--", color="red")
 
             self.ax.set_title(
-                f"phase space ptcl={self.N_particle} ens={self.N_ensemble} \n{self.degree}th-order F={self.slope} d={self.Lambda} v={self.velocity}", fontsize=20)
+                f"phase space ptcl={self.N_particle} ens={self.N_ensemble} T={self.temperature} tau={self.tau} Da={self.Da}\n{self.degree}th-order F={self.slope} d={self.Lambda} v={self.velocity}", fontsize=20)
             self.ax.set_xlabel("Particle position", fontsize=20)
             self.ax.set_ylabel("Colored noise", fontsize=20)
 
@@ -412,7 +419,7 @@ class AOUP:
         Path(
             f"animation/{self.degree}/phase_space").mkdir(parents=True, exist_ok=True)
 
-        ani.save(f"animation/{self.degree}/phase_space/ptcl={self.N_particle} ens={self.N_ensemble} \n {self.degree}th-order F={self.slope} d={self.Lambda} v={self.velocity}.mp4",
+        ani.save(f"animation/{self.degree}/phase_space/ptcl={self.N_particle} ens={self.N_ensemble} {self.degree}th-order F={self.slope} d={self.Lambda} v={self.velocity}.mp4",
                  fps=fps, extra_args=['-vcodec', 'libx264'])
 
 
