@@ -295,7 +295,7 @@ class AOUP:
             self.ax.set_ylim(bottom=0.0, top=max/self.N_bins*1.5)
 
             self.ax.set_title(
-                f"animation ptcl={self.N_particle} ens={self.N_ensemble} T={self.temperature} tau={self.tau} Da={self.Da}\n{self.degree}-th order f={self.slope} d={self.Lambda} v={self.velocity}", fontsize=15)
+                f"animation ptcl={self.N_particle} ens={self.N_ensemble} tau={self.tau} Da={self.Da}\n{self.degree}-th order T={self.temperature} F={self.slope} d={self.Lambda} v={self.velocity}", fontsize=15)
 
             self.ax.text(
                 0.99, 0.99, f"iter = {self.interval * (i+1)}",
@@ -317,7 +317,7 @@ class AOUP:
         Path(
             f"animation/{self.degree}/histogram").mkdir(parents=True, exist_ok=True)
 
-        ani.save(f"animation/{self.degree}/histogram/ptcl={self.N_particle} ens={self.N_ensemble} deg={self.degree} f={self.slope} d={self.Lambda} v={self.velocity}.gif",
+        ani.save(f"animation/{self.degree}/histogram/ptcl={self.N_particle} ens={self.N_ensemble} {self.degree}-th order T={self.temperature} F={self.slope} d={self.Lambda} v={self.velocity}.gif",
                  fps=fps)  # , extra_args=['-vcodec', 'libx264'])
 
     def average_distribution(self, frames: int = 100) -> None:
@@ -358,7 +358,7 @@ class AOUP:
         self.ax.set_ylim(bottom=0.0, top=max/self.N_bins*1.5)
 
         self.ax.set_title(
-            f"distribution ptcl={self.N_particle} ens={self.N_ensemble} T={self.temperature} tau={self.tau} Da={self.Da}\n{self.degree}-th order f={self.slope} d={self.Lambda} v={self.velocity}", fontsize=15)
+            f"distribution ptcl={self.N_particle} ens={self.N_ensemble} tau={self.tau} Da={self.Da}\n{self.degree}-th order T={self.temperature} F={self.slope} d={self.Lambda} v={self.velocity}", fontsize=15)
 
         self.ax.text(
             0.99, 0.91, f"drag = {drag}",
@@ -371,7 +371,7 @@ class AOUP:
             f"fig/{self.degree}/distribution").mkdir(parents=True, exist_ok=True)
 
         self.fig.savefig(
-            f"fig/{self.degree}/distribution/ptcl={self.N_particle} ens={self.N_ensemble} {self.degree}-th order f={self.slope} d={self.Lambda} v={self.velocity}.jpg")
+            f"fig/{self.degree}/distribution/ptcl={self.N_particle} ens={self.N_ensemble} {self.degree}-th order T={self.temperature} F={self.slope} d={self.Lambda} v={self.velocity}.jpg")
 
     def phase_space(self, frames: int = 100, fps: int = 10) -> None:
         self.reset()
@@ -400,7 +400,7 @@ class AOUP:
             self.ax.axvline(-self.Lambda / 2, linestyle="--", color="red")
 
             self.ax.set_title(
-                f"phase space ptcl={self.N_particle} ens={self.N_ensemble} T={self.temperature} tau={self.tau} Da={self.Da}\n{self.degree}th-order F={self.slope} d={self.Lambda} v={self.velocity}", fontsize=20)
+                f"phase space ptcl={self.N_particle} ens={self.N_ensemble} tau={self.tau} Da={self.Da}\n{self.degree}th-order T={self.temperature} F={self.slope} d={self.Lambda} v={self.velocity}", fontsize=20)
             self.ax.set_xlabel("Particle position", fontsize=20)
             self.ax.set_ylabel("Colored noise", fontsize=20)
 
@@ -419,7 +419,7 @@ class AOUP:
         Path(
             f"animation/{self.degree}/phase_space").mkdir(parents=True, exist_ok=True)
 
-        ani.save(f"animation/{self.degree}/phase_space/ptcl={self.N_particle} ens={self.N_ensemble} {self.degree}th-order F={self.slope} d={self.Lambda} v={self.velocity}.mp4",
+        ani.save(f"animation/{self.degree}/phase_space/ptcl={self.N_particle} ens={self.N_ensemble} {self.degree}th-order T={self.temperature} F={self.slope} d={self.Lambda} v={self.velocity}.mp4",
                  fps=fps, extra_args=['-vcodec', 'libx264'])
 
 
@@ -454,7 +454,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument("-N", "--N_particle", type=int, default=1)
-    parser.add_argument("-ens", "--N_ensemble", type=int, default=10000)
+    parser.add_argument("-ens", "--N_ensemble", type=int, default=1000)
     parser.add_argument("-mode", "--mode", type=str,
                         default="manual", choices=["manual", "velocity", "Lambda", "slope"])
     parser.add_argument("-v", "--velocity", type=float, default=1.0)
@@ -467,7 +467,7 @@ if __name__ == '__main__':
     parser.add_argument("-max_f", "--max_slope", type=float, default=1.0)
     parser.add_argument("-N_f", "--N_slope", type=int, default=7)
     parser.add_argument("-L", "--boundary", type=float, default=5.0)
-    parser.add_argument("-bin", "--N_bins", type=int, default=40)
+    parser.add_argument("-bin", "--N_bins", type=int, default=50)
     parser.add_argument("-g", "--gamma", type=float, default=1.0)
     parser.add_argument("-T", "--temperature", type=float, default=0.001)
     parser.add_argument("-tau", "--tau", type=float, default=1.0)
@@ -476,7 +476,7 @@ if __name__ == '__main__':
     parser.add_argument("-init", "--initial", type=int, default=10000)
     parser.add_argument("-sam", "--sampling", type=int, default=100)
     parser.add_argument("-unit", "--interval", type=int, default=1000)
-    parser.add_argument("-deg", "--degree", type=int, default=2)
+    parser.add_argument("-deg", "--degree", type=int, default=4)
 
     args = parser.parse_args()
 
@@ -501,8 +501,8 @@ if __name__ == '__main__':
         )
 
         aoup = AOUP(parameter)
-        # aoup.average_distribution(frames=100)
-        # aoup.animate_histogram(frames=100, fps=10)
+        # aoup.average_distribution(frames=1000)
+        aoup.animate_histogram(frames=1000, fps=30)
         aoup.run_AOUP()
 
     elif args.mode == "velocity":
