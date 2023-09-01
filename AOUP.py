@@ -251,25 +251,25 @@ class AOUP:
         self.Time.periodic_update += time.perf_counter() - now
 
     # * animate histogram
-    def animate_histogram(self, frames: int = 100, fps: int = 10) -> None:
+    def animate_histogram(self, frames: int = 300, interval: int = 100, fps: int = 30) -> None:
         self.reset()
         self.fig, self.ax = plt.subplots(tight_layout=True)
-        self.bins = np.linspace(-self.boundary/2,
-                                self.boundary/2, self.N_bins+1)
+        self.bins = np.linspace(
+            -self.boundary/2, self.boundary/2, self.N_bins+1)
 
         max = self.N_particle * self.N_ensemble
         self.ax.hist(self.position.reshape(-1), bins=self.bins)
 
         num_test = 10
-        vertical = np.linspace(
-            max / self.N_bins / (num_test + 1), max / self.N_bins / (num_test + 1) * num_test, num_test)
+        vertical = np.linspace(max / self.N_bins / (num_test + 1),
+                               max / self.N_bins / (num_test + 1) * num_test, num_test)
         self.ax.scatter(self.position[0, :num_test], vertical, color="red")
         self.ax.set_xlim(left=-self.boundary/2, right=self.boundary/2)
         self.ax.set_ylim(bottom=0.0, top=max/self.N_bins*1.5)
 
-        def animate_histogram(i: int) -> None:  # * update animation
+        def animate(i: int) -> None:  # * update animation
             # print(i, end=" ")
-            for _ in range(self.interval):
+            for _ in range(interval):
                 self.time_evolution()
 
             self.ax.cla()
@@ -279,8 +279,8 @@ class AOUP:
             self.ax.axvline(-self.Lambda/2, linestyle="--", color="k")
             self.ax.axvline(0.0, linestyle="--", color="k")
             self.ax.axvline(self.Lambda/2, linestyle="--", color="k")
-            self.ax.axhline(max / self.N_bins,
-                            linestyle="--", color="k")
+            self.ax.axhline(
+                max / self.N_bins, linestyle="--", color="k")
 
             lx = np.linspace(-self.Lambda/2, 0, 100)
             rx = np.linspace(0, self.Lambda/2, 100)
@@ -298,7 +298,7 @@ class AOUP:
                 f"animation ptcl={self.N_particle} ens={self.N_ensemble} tau={self.tau} Da={self.Da}\n{self.degree}-th order T={self.temperature} F={self.slope} d={self.Lambda} v={self.velocity}", fontsize=15)
 
             self.ax.text(
-                0.99, 0.99, f"iter = {self.interval * (i+1)}",
+                0.99, 0.99, f"iter = {interval * (i+1)}",
                 verticalalignment="top", horizontalalignment='right',
                 transform=self.ax.transAxes,
                 color='black', fontsize=20
@@ -312,7 +312,7 @@ class AOUP:
             )
 
         ani = animation.FuncAnimation(
-            fig=self.fig, func=animate_histogram, frames=frames, interval=0, blit=False)
+            fig=self.fig, func=animate, frames=frames, interval=0, blit=False)
 
         Path(
             f"animation/{self.degree}/histogram").mkdir(parents=True, exist_ok=True)
@@ -367,8 +367,7 @@ class AOUP:
             color='black', fontsize=20
         )
 
-        Path(
-            f"fig/{self.degree}/distribution").mkdir(parents=True, exist_ok=True)
+        Path(f"fig/{self.degree}/distribution").mkdir(parents=True, exist_ok=True)
 
         self.fig.savefig(
             f"fig/{self.degree}/distribution/ptcl={self.N_particle} ens={self.N_ensemble} {self.degree}-th order T={self.temperature} F={self.slope} d={self.Lambda} v={self.velocity}.jpg")
@@ -467,7 +466,7 @@ if __name__ == '__main__':
     parser.add_argument("-max_f", "--max_slope", type=float, default=1.0)
     parser.add_argument("-N_f", "--N_slope", type=int, default=7)
     parser.add_argument("-L", "--boundary", type=float, default=5.0)
-    parser.add_argument("-bin", "--N_bins", type=int, default=50)
+    parser.add_argument("-bin", "--N_bins", type=int, default=100)
     parser.add_argument("-g", "--gamma", type=float, default=1.0)
     parser.add_argument("-T", "--temperature", type=float, default=0.001)
     parser.add_argument("-tau", "--tau", type=float, default=1.0)
@@ -502,7 +501,7 @@ if __name__ == '__main__':
 
         aoup = AOUP(parameter)
         # aoup.average_distribution(frames=1000)
-        aoup.animate_histogram(frames=1000, fps=30)
+        aoup.animate_histogram(frames=300, interval=100, fps=30)
         aoup.run_AOUP()
 
     elif args.mode == "velocity":
@@ -536,7 +535,7 @@ if __name__ == '__main__':
 
             aoup = AOUP(parameter)
             # aoup.average_distribution(frames=100)
-            # aoup.animate_histogram(frames=100, fps=10)
+            # aoup.animate_histogram(frames=300, interval=100, fps=30)
             aoup.run_AOUP()
 
     elif args.mode == "Lambda":
@@ -567,7 +566,7 @@ if __name__ == '__main__':
 
             aoup = AOUP(parameter)
             # aoup.average_distribution(frames=100)
-            # aoup.animate_histogram(frames=100, fps=10)
+            # aoup.animate_histogram(frames=300, interval=100, fps=10)
             aoup.run_AOUP()
 
     elif args.mode == "slope":
@@ -598,7 +597,7 @@ if __name__ == '__main__':
 
             aoup = AOUP(parameter)
             # aoup.average_distribution(frames=100)
-            # aoup.animate_histogram(frames=100, fps=10)
+            # aoup.animate_histogram(frames=300, interval=100, fps=10)
             aoup.run_AOUP()
 
     else:
