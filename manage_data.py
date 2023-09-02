@@ -37,7 +37,7 @@ def get_conditions(
     initial: int | None = None,
     sampling: int | None = None,
     interval: int | None = None,
-    potential: int | None = None,
+    degree: int | None = None,
 ) -> list[str]:
 
     conditions: list[str] = []
@@ -72,8 +72,8 @@ def get_conditions(
         conditions.append(f"sampling == {sampling}")
     if interval is not None:
         conditions.append(f"interval == {interval}")
-    if potential is not None:
-        conditions.append(f"potential == {potential}")
+    if degree is not None:
+        conditions.append(f"degree == {degree}")
 
     return conditions
 
