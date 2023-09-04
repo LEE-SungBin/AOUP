@@ -265,7 +265,7 @@ class AOUP:
                                max / self.N_bins / (num_test + 1) * num_test, num_test)
         self.ax.scatter(self.position[0, :num_test], vertical, color="red")
         self.ax.set_xlim(left=-self.boundary/2, right=self.boundary/2)
-        self.ax.set_ylim(bottom=0.0, top=max/self.N_bins*1.5)
+        self.ax.set_ylim(bottom=0.0, top=max/self.N_bins*2.0)
 
         def animate(i: int) -> None:  # * update animation
             # print(i, end=" ")
@@ -292,7 +292,7 @@ class AOUP:
             self.ax.plot(rx, V(rx), color="blue")    # * Positive drag
 
             self.ax.set_xlim(left=-self.boundary/2, right=self.boundary/2)
-            self.ax.set_ylim(bottom=0.0, top=max/self.N_bins*1.5)
+            self.ax.set_ylim(bottom=0.0, top=max/self.N_bins*2.0)
 
             self.ax.set_title(
                 f"animation ptcl={self.N_particle} ens={self.N_ensemble} tau={self.tau} Da={self.Da}\n{self.degree}-th order T={self.temperature} F={self.slope} d={self.Lambda} v={self.velocity}", fontsize=15)
@@ -355,7 +355,7 @@ class AOUP:
         self.ax.plot(rx, V(rx), color="blue")    # * Positive drag
 
         self.ax.set_xlim(left=-self.boundary/2, right=self.boundary/2)
-        self.ax.set_ylim(bottom=0.0, top=max/self.N_bins*1.5)
+        self.ax.set_ylim(bottom=0.0, top=max/self.N_bins*2.0)
 
         self.ax.set_title(
             f"distribution ptcl={self.N_particle} ens={self.N_ensemble} tau={self.tau} Da={self.Da}\n{self.degree}-th order T={self.temperature} F={self.slope} d={self.Lambda} v={self.velocity}", fontsize=15)
@@ -502,7 +502,7 @@ if __name__ == '__main__':
         aoup = AOUP(parameter)
         # aoup.average_distribution(frames=1000)
         aoup.animate_histogram(frames=300, interval=100, fps=30)
-        aoup.run_AOUP()
+        # aoup.run_AOUP()
 
     elif args.mode == "velocity":
         # velocities = get_logspace(
