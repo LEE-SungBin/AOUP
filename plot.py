@@ -38,10 +38,11 @@ def log_fit(
         end = raw_x.max()
 
     poly, residual, _, _, _ = np.polyfit(
-        np.log10(raw_x), np.log10(raw_y), 1, full=True)
+        np.log10(raw_x[(start < raw_x) & (raw_x < end)]), np.log10(raw_y[
+            (start < raw_x) & (raw_x < end)]), 1, full=True)
     fit_x = np.array([start, end], dtype=np.float64)
     fit_y = pow(10.0, poly[1] - offset) * np.power(fit_x, poly[0])
-    return fit_x, fit_y, poly[0], residual[0]
+    return fit_x, fit_y, poly[0], poly[1]
 
 
 def lin_log_fit(
