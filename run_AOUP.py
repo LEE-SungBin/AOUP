@@ -232,6 +232,7 @@ class AOUP:
             -self.boundary/2, self.boundary/2, self.N_bins+1)
 
         max = self.N_particle * self.N_ensemble
+        celing = 2.0
         self.ax.hist(self.position.reshape(-1), bins=self.bins)
 
         num_test = 10
@@ -241,7 +242,7 @@ class AOUP:
                                max / self.N_bins / (num_test + 1) * num_test, num_test)
         self.ax.scatter(self.position[random_index], vertical, color="red")
         self.ax.set_xlim(left=-self.boundary/2, right=self.boundary/2)
-        self.ax.set_ylim(bottom=0.0, top=max/self.N_bins*2.0)
+        self.ax.set_ylim(bottom=0.0, top=max/self.N_bins*celing)
 
         def animate(i: int) -> None:  # * update animation
             # print(i, end=" ")
@@ -268,7 +269,7 @@ class AOUP:
             self.ax.plot(rx, V(rx), color="blue")    # * Positive drag
 
             self.ax.set_xlim(left=-self.boundary/2, right=self.boundary/2)
-            self.ax.set_ylim(bottom=0.0, top=max/self.N_bins*2.0)
+            self.ax.set_ylim(bottom=0.0, top=max/self.N_bins*celing)
 
             self.ax.set_title(
                 f"animation ptcl={self.N_particle} ens={self.N_ensemble} tau={self.tau} Da={self.Da}\n{self.degree}-th order T={self.temperature} F={self.slope} d={self.Lambda} v={self.velocity}", fontsize=15)
