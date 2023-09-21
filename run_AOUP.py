@@ -16,7 +16,7 @@ import time
 from numba import njit
 import itertools
 
-from AOUP import Parameter
+from main import num_Params
 
 
 @dataclass
@@ -36,30 +36,30 @@ class Time:
 
 
 class AOUP:
-    def __init__(self, parameter: Parameter):
-        self.parameter = parameter
+    def __init__(self, num_params: num_Params):
+        self.num_params = num_params
         self.set_coeff()
 
     def set_coeff(self) -> None:
-        self.N_particle = self.parameter.N_particle  # * number of AOUPs
-        self.N_ensemble = self.parameter.N_ensemble  # * number of ensemble
-        self.velocity = self.parameter.velocity  # * velocity of object
-        self.Lambda = self.parameter.Lambda      # * size of object
-        self.boundary = self.parameter.boundary  # * size of periodic boundary
-        self.N_bins = self.parameter.N_bins      # * number of histogram bins
-        self.gamma = self.parameter.gamma        # * drag coefficient
-        self.slope = self.parameter.slope        # * slope of potential
-        self.temperature = self.parameter.temperature    # * temperature
-        # * autocorrelation time-scale of colored noise
-        self.tau = self.parameter.tau
-        self.Da = self.parameter.Da              # * coefficients of colored noise
-        self.delta_t = self.parameter.delta_t    # * update time interval
+        self.N_particle = self.num_params.N_particle  # * number of AOUPs
+        self.N_ensemble = self.num_params.N_ensemble  # * number of ensemble
+        self.velocity = self.num_params.velocity  # * velocity of object
+        self.Lambda = self.num_params.Lambda      # * size of object
+        self.boundary = self.num_params.boundary  # * size of periodic boundary
+        self.N_bins = self.num_params.N_bins      # * number of histogram bins
+        self.gamma = self.num_params.gamma        # * drag coefficient
+        self.slope = self.num_params.slope        # * slope of potential
+        self.temperature = self.num_params.temperature    # * temperature
+        # * autocorrelation time-scalw of colored noise
+        self.tau = self.num_params.tau
+        self.Da = self.num_params.Da              # * coefficients of colored noise
+        self.delta_t = self.num_params.delta_t    # * update time interval
         # * number of iteration to remove initial effect
-        self.initial = self.parameter.initial
-        self.sampling = self.parameter.sampling  # * number of iter to collect samples
-        self.interval = self.parameter.interval  # * iteration interval of collection
+        self.initial = self.num_params.initial
+        self.sampling = self.num_params.sampling  # * number of iter to collect samples
+        self.interval = self.num_params.interval  # * iteration interval of collection
         # * degree of external potential, 1, 2, 3, ...
-        self.degree = self.parameter.degree
+        self.degree = self.num_params.degree
 
     def _reset(self) -> None:  # * initialize position and noise
         self.Time = Time(
@@ -106,7 +106,7 @@ class AOUP:
         assert drag.shape == (
             self.N_ensemble, ), f"drag.shape {drag.shape} != ({self.N_ensemble}, )"
 
-        key = hashlib.sha1(str(self.parameter).encode()).hexdigest()[:6]
+        key = hashlib.sha1(str(self.num_params).encode()).hexdigest()[:6]
         data_dir, setting_dir = Path(f"data"), Path(f"setting")
         data_dir.mkdir(parents=True, exist_ok=True)
         setting_dir.mkdir(parents=True, exist_ok=True)
@@ -114,7 +114,7 @@ class AOUP:
         output: dict[str, Any] = {
             "key": key,
         }
-        output.update(asdict(self.parameter))
+        output.update(asdict(self.num_params))
 
         # * save setting
         # with open(setting_dir / f"{filename}.json", "w") as file:
@@ -135,7 +135,7 @@ class AOUP:
         # * save log
         with open("log.txt", "a") as file:
             file.write(
-                f"{datetime.now().replace(microsecond=0)} | {self.parameter.to_log()} | drag={np.round(np.mean(drag),5)}, std={np.round(np.std(drag)/np.sqrt(self.N_ensemble),5)} | {self.Time.to_log()}\n"
+                f"{datetime.now().replace(microsecond=0)} | {self.num_Params.to_log()} | drag={np.round(np.mean(drag),5)}, std={np.round(np.std(drag)/np.sqrt(self.N_ensemble),5)} | {self.Time.to_log()}\n"
             )
 
     # * time evolution of AOUP
@@ -150,7 +150,7 @@ class AOUP:
 
         now = time.perf_counter()
         self.position += (force / self.gamma - self.velocity) * self.delta_t
-        self.position += self.colored_noise * self.delta_t
+        # self.position += self.colored_noise * self.delta_t
         self.position += self.rng.normal(
             loc=0.0,  # * mean
             scale=np.sqrt(2 * self.temperature / \

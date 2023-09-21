@@ -18,7 +18,7 @@ import matplotlib.animation as animation
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.axes import Axes
 
-from AOUP import Parameter
+from main import Parameter
 
 
 def get_conditions(
